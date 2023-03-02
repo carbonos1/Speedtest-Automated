@@ -13,6 +13,11 @@ HELP = \
     f"-h --help\n"\
     f"-v --value\n"
 
+GIGACOMM_MELBOURNE = ['GigaComm - Melbourne',36100]
+TELSTRA_MELBOURNE = ['Telstra - Melbourne',12491]
+GIGACOMM_SYDNEY = ['GigaComm - Sydney',36157]
+TELSTRA_SYDNEY = ['Telstra - Sydney',12492]
+
 def speedtest_prefix():
     '''Simple logic to adjust the speedtest CLI output for usage in differing Operating Systems '''
     if os.name == "nt":
@@ -72,7 +77,7 @@ def check_results(df_speed,pass_dl=940,pass_ul=939):
     return result
 
 def print_results(df_total):
-    '''Prints output results of testing on screen, and '''
+    '''Prints output results of testing on screen, and saves them to a prefined CSV'''
     output_csv = f'Speedtest-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
     df_total.to_csv(output_csv)
     print(df_total[['Server Name','Location','Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']])
@@ -80,7 +85,7 @@ def print_results(df_total):
 
 
 
-def run_speed_test(server_name = 'Unspecified Server:',server_id = 36100,num_of_runs=6):
+def run_speed_test(server_name = 'Server:',server_id = 36100,num_of_runs=6):
     '''Runs Speedtest Results, and outputs the values into a JSON, it will also return the output results as a Pandas Dataframe.
     server_name = Name of the Server Passed'''
     #file_name = f'{server_name}-Speedtest-{start_time}.csv'
@@ -92,22 +97,67 @@ def run_speed_test(server_name = 'Unspecified Server:',server_id = 36100,num_of_
         df_total = pd.concat([df_total,df])
     return df_total
 
+def melbourne_speedtest(numb_of_runs = 6):
+    '''Predefined Melbourne Speedtest Behaviour'''
+    df_gigacomm = run_speed_test(GIGACOMM_MELBOURNE[0],GIGACOMM_MELBOURNE[1],numb_of_runs)
+    print(f'{GIGACOMM_MELBOURNE[0]} Result: {check_results(df_gigacomm)}')
+    df_telstra = run_speed_test(TELSTRA_MELBOURNE[0],TELSTRA_MELBOURNE[1],numb_of_runs)
+    print(f'{TELSTRA_MELBOURNE[0]} Result: {check_results(df_telstra)}')
+    df_total = pd.concat([df_gigacomm,df_telstra])
+    print_results(df_total) 
+    #Add output CSV 
+
+def sydney_speedtest(numb_of_runs = 6):
+    '''Predefined Sydney Speedtest Behaviour'''
+    df_gigacomm = run_speed_test(GIGACOMM_SYDNEY[0],GIGACOMM_SYDNEY[1],numb_of_runs)
+    print(f'{GIGACOMM_SYDNEY[0]} Result: {check_results(df_gigacomm)}')
+    df_telstra = run_speed_test(TELSTRA_SYDNEY[0],TELSTRA_SYDNEY[1],numb_of_runs)
+    print(f'{TELSTRA_MELBOURNE[0]} Result: {check_results(df_telstra)}')
+    df_total = pd.concat([df_gigacomm,df_telstra])
+    print_results(df_total) 
+    #Add output CSV 
 
 def main():
     '''Primary Function of the program, controls primary logic when called.'''
     # Server Values
-    gigacomm_melbourne = ['GigaComm - Melbourne',36100]
-    telstra_melbourne = ['Telstra - Melbourne',12491]
 
-    df_gigacomm = run_speed_test(gigacomm_melbourne[0],gigacomm_melbourne[1],1)
-    #df_gigacomm = run_speed_test()
-    print(f'{gigacomm_melbourne[0]} Result: {check_results(df_gigacomm)}')
-    df_telstra = run_speed_test(telstra_melbourne[0],telstra_melbourne[1],1)
-    print(f'{telstra_melbourne[0]} Result: {check_results(df_telstra)}')
+    server_id = ['Custom Server',36100]
+    num_of_runs = 6
     
-    df_total = pd.concat([df_gigacomm,df_telstra])
-    #Add output CSV
-    print_results(df_total)  
+    
+    #Grab input arguments
+    args=sys.argv[1:]
+    try:
+        opts, args = getopt.getopt(args,"hl:s:o:p:n:",["help","server-id=","outputfile=","location=","pass_threshold="])
+    except getopt.GetoptError:
+        print(f'INVALID SYNTAX:\n {HELP}')
+
+    # Switch statement:
+
+    if len(opts) <= 0:
+        # Default Behaviour
+        melbourne_speedtest()
+    else:
+        for opt, arg in opts:
+            if opt == '-h':
+                print(HELP)
+                sys.exit()
+            elif opt == '-n':
+                num_of_runs = int(arg)
+            elif opt == '-s':
+                server_id = arg
+                df_speed = run_speed_test('Custom Server',server_id,num_of_runs)
+                print_results(df_speed)
+                check_results(df_speed)
+            elif opt == '-l':
+                print(arg)
+                #if arg == 'MEL' or 'mel' or 'Melbourne' or 'melbourne':
+                if 'mel' in arg.lower():
+                    melbourne_speedtest(num_of_runs)
+                elif 'syd' in arg.lower():
+                    sydney_speedtest(num_of_runs)
+                else:
+                    print(f"ERROR: Unknown argument \n {HELP}")
 
 if __name__ == "__main__":
     main()
