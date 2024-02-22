@@ -42,11 +42,11 @@ def main():
     print(f'Download Output: \n ----- \n {download_results}')
     print(f'Upload Ouput: \n ----- \n {upload_results}')
     # Mash the two iperf plots back together again 
-    ax = upload_results.plot(x='file',y='recieved_mbps',label='Upload',figsize=(10, 10))
-    download_results.plot(x='file',y='recieved_mbps',label='Download',figsize=(10, 10),ax=ax)
-
-    ax.scatter(x=upload_results['file'],y=upload_results['recieved_mbps'])
+    ax = download_results.plot(x='file',y='recieved_mbps',label='Download',figsize=(20, 10))
+    upload_results.plot(x='file',y='recieved_mbps',label='Upload',figsize=(20, 10),ax=ax)
+    
     ax.scatter(x=download_results['file'],y=download_results['recieved_mbps'])
+    ax.scatter(x=upload_results['file'],y=upload_results['recieved_mbps'])
     
 
     # Add Data Points to graph
