@@ -28,7 +28,7 @@ def concat_files(path='./',dfs=[]):
         # Append the dataframe to the list
         dfs.append(means)
 
-    return pd.concat(dfs, ignore_index=True)
+    return pd.concat(dfs, ignore_index=True).sort_values(by=['file'])
         
 
 def main():
