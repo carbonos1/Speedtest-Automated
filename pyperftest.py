@@ -70,6 +70,11 @@ def main():
     df_final.to_csv(output_csv)
     print(f'Results Found in {output_csv}')
 
+    #Find the average of all iPer tests and print them to screen
+    print('-------\nAverage\n-------')
+    df_average = df_final.groupby("mode")[["sent_mbps", "recieved_mbps"]].mean()
+    df_average = df_average.reset_index()
+    print(df_average)
 
 
 if __name__ == "__main__":
