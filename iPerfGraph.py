@@ -28,7 +28,7 @@ def concat_files(path='./',dfs=[]):
         # Append the dataframe to the list
         dfs.append(means)
 
-    return pd.concat(dfs, ignore_index=True).sort_values(by=['file'])
+    return pd.concat(dfs, ignore_index=True)
         
 
 def main():
@@ -42,13 +42,12 @@ def main():
     print(f'Download Output: \n ----- \n {download_results}')
     print(f'Upload Ouput: \n ----- \n {upload_results}')
     # Mash the two iperf plots back together again 
-    ax = download_results.plot(x='file',y='recieved_mbps',label='Download',figsize=(20, 10))
-    upload_results.plot(x='file',y='recieved_mbps',label='Upload',figsize=(20, 10),ax=ax)
+    ax = download_results.plot(x='file',y='recieved_mbps',label='Download',figsize=(10, 5))
+    upload_results.plot(x='file',y='recieved_mbps',label='Upload',figsize=(10, 5),ax=ax)
     
     ax.scatter(x=download_results['file'],y=download_results['recieved_mbps'])
     ax.scatter(x=upload_results['file'],y=upload_results['recieved_mbps'])
     
-
     # Add Data Points to graph
     for i,j in zip(download_results['file'],download_results['recieved_mbps']):
         ax.annotate(str(j),xy=(i,j))
@@ -56,12 +55,16 @@ def main():
     for i,j in zip(upload_results['file'],upload_results['recieved_mbps']):
         ax.annotate(str(j),xy=(i,j))
     #fig = plt.figure
+    
+    # Set up Table Formatting
     ax.grid()
     plt.setp(ax.get_xticklabels(), rotation=20, ha="right")
-    plt.show()
-    #plt.savefig('iPerfSummary.png')
 
-    # Dummy Code in the 
+    # Save Figure to Files (scalar and vector)
+    plt.savefig('iPerfSummary.png')
+    plt.savefig('iPerfSummary.svg')
+    #plt.show()
+   
 
 
 
