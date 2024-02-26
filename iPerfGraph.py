@@ -29,8 +29,6 @@ def concat_files(path='./',dfs=[]):
         dfs.append(means)
 
     return pd.concat(dfs, ignore_index=True)
-        
-
 def main():
     ''' Primary Function, if left to run normally, this script will '''
     
@@ -39,8 +37,8 @@ def main():
     upload_results = iperf_results.loc[iperf_results['mode'] == 'Upload']
     download_results = iperf_results.loc[iperf_results['mode'] == 'Download']
 
-    print(f'Download Output: \n ----- \n {download_results}')
-    print(f'Upload Ouput: \n ----- \n {upload_results}')
+    print(f'\n----------\nDownload Output:\n----------\n {download_results}')
+    print(f'\n----------\nUpload Output:\n----------\n{upload_results}')
     # Mash the two iperf plots back together again 
     ax = download_results.plot(x='file',y='recieved_mbps',label='Download (in Mbps)',figsize=(10, 5))
     upload_results.plot(x='file',y='recieved_mbps',label='Upload (in Mbps)',ax=ax)
