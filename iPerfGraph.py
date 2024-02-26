@@ -42,23 +42,23 @@ def main():
     print(f'Download Output: \n ----- \n {download_results}')
     print(f'Upload Ouput: \n ----- \n {upload_results}')
     # Mash the two iperf plots back together again 
-    ax = download_results.plot(x='file',y='recieved_mbps',label='Download',figsize=(10, 5))
-    upload_results.plot(x='file',y='recieved_mbps',label='Upload',figsize=(10, 5),ax=ax)
-    
+    ax = download_results.plot(x='file',y='recieved_mbps',label='Download (in Mbps)',figsize=(10, 5))
+    upload_results.plot(x='file',y='recieved_mbps',label='Upload (in Mbps)',ax=ax)
     ax.scatter(x=download_results['file'],y=download_results['recieved_mbps'])
     ax.scatter(x=upload_results['file'],y=upload_results['recieved_mbps'])
     
     # Add Data Points to graph
     for i,j in zip(download_results['file'],download_results['recieved_mbps']):
-        ax.annotate(str(j),xy=(i,j))
+        ax.annotate(str(round(j,2)),xy=(i,j))
 
     for i,j in zip(upload_results['file'],upload_results['recieved_mbps']):
-        ax.annotate(str(j),xy=(i,j))
+        ax.annotate(str(round(j,2)),xy=(i,j))
     #fig = plt.figure
     
-    # Set up Table Formatting
+    # Set up Table Formatting & add Titles
     ax.grid()
-    plt.setp(ax.get_xticklabels(), rotation=20, ha="right")
+    plt.setp(ax.get_xticklabels(), rotation=10, ha="right")
+    plt.title(input('Enter Plot Title:'))
 
     # Save Figure to Files (scalar and vector)
     plt.savefig('iPerfSummary.png')
