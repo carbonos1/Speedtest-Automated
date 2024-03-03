@@ -1,66 +1,66 @@
 #!/bin/python
-'''Python Script for graphing out iPerf3 results as the product of "pyperftest.py" '''
+'''Python Script for graphing out iPerf3 results as the product of "pyperftest.py"
+TOC 3/3/24: Rebuild for Refactor
+ '''
 from datetime import datetime, timedelta
-import iperf3
 import pandas as pd
 import glob
 import matplotlib.pyplot as plt
 
 
-def concat_files(path='./',dfs=[]):
+def concat_files(path='results/',dfs=[]):
     '''Nabs all the files in the current directory, then combines them together'''
     # Outlines files in current directory
     files = glob.glob(path + "/*.csv")
-
     for file in files:
          # Read each file as a pandas dataframe
         df = pd.read_csv(file)
 
-        # Group by mode and calculate the mean for sent_mbps and recieved_mbps
-        means = df.groupby("mode")[["sent_mbps", "recieved_mbps"]].mean()
+        # Group by mode and calculate the mean for Both the Download and upload
+        means = df.groupby('Server Name')[['Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']].mean()
 
         # Reset the index of means to make mode a column
         means = means.reset_index()
 
         # Add the file name as a column
-        means["file"] = file[2:-4]
+        means["file"] = file[8:-4]
 
         # Append the dataframe to the list
         dfs.append(means)
 
     return pd.concat(dfs, ignore_index=True)
 def main():
-    ''' Primary Function, if left to run normally, this script will '''
+    ''' Builds the Graph for us :)'''
     
     iperf_results = concat_files()
-    iperf_results.to_excel('iPerfSummary.xlsx')
-    upload_results = iperf_results.loc[iperf_results['mode'] == 'Upload']
-    download_results = iperf_results.loc[iperf_results['mode'] == 'Download']
+    iperf_results.to_excel('results/iPerfSummary.xlsx')
+    print()
 
-    print(f'\n----------\nDownload Output:\n----------\n {download_results}')
-    print(f'\n----------\nUpload Output:\n----------\n{upload_results}')
+
+    print(f'\n----------\nAverages Output:\n----------\n {iperf_results}')
     # Mash the two iperf plots back together again 
-    ax = download_results.plot(x='file',y='recieved_mbps',label='Download (in Mbps)',figsize=(10, 5))
-    upload_results.plot(x='file',y='recieved_mbps',label='Upload (in Mbps)',ax=ax)
-    ax.scatter(x=download_results['file'],y=download_results['recieved_mbps'])
-    ax.scatter(x=upload_results['file'],y=upload_results['recieved_mbps'])
+    ax = iperf_results.plot(x='file',y='Download Bandwidth (Mbps)',label='Download (in Mbps)',figsize=(10, 5))
+    iperf_results.plot(x='file',y='Upload Bandwidth (Mbps)',label='Upload (in Mbps)',ax=ax)
+    ax.scatter(x=iperf_results['file'],y=iperf_results['Download Bandwidth (Mbps)'])
+    ax.scatter(x=iperf_results['file'],y=iperf_results['Upload Bandwidth (Mbps)'])
     
     # Add Data Points to graph
-    for i,j in zip(download_results['file'],download_results['recieved_mbps']):
+    for i,j in zip(iperf_results['file'],iperf_results['Download Bandwidth (Mbps)']):
         ax.annotate(str(round(j,2)),xy=(i,j))
 
-    for i,j in zip(upload_results['file'],upload_results['recieved_mbps']):
+    for i,j in zip(iperf_results['file'],iperf_results['Download Bandwidth (Mbps)']):
         ax.annotate(str(round(j,2)),xy=(i,j))
     #fig = plt.figure
     
     # Set up Table Formatting & add Titles
+    title = input('Enter Plot Title:')
     ax.grid()
     plt.setp(ax.get_xticklabels(), rotation=10, ha="right")
-    plt.title(input('Enter Plot Title:'))
+    plt.title(title)
 
     # Save Figure to Files (scalar and vector)
-    plt.savefig('iPerfSummary.png')
-    plt.savefig('iPerfSummary.svg')
+    plt.savefig(f'results/{title}.png')
+    plt.savefig(f'results/{title}.svg')
     #plt.show()
    
 

@@ -16,7 +16,7 @@ TELSTRA_SYDNEY = ['Telstra - Sydney',12492]
 
 def print_results(df_total,output_file):
     '''Prints output results of testing on screen, and saves them to a prefined CSV'''
-    df_total.to_csv(f'Results/{output_file}')
+    df_total.to_csv(f'results/{output_file}')
     print(df_total[['Server Name','Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']])
     print('-------\nAverage\n-------')
     print(df_total[['Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']].mean())
