@@ -52,8 +52,8 @@ class Iperf3Auto:
             # Combine both DataFrames into a combined one with the relevant data we need. 
             #Note we use 'recieved_mbps' to measure traffic that has actually gone across the link
             df_combo = pd.DataFrame()
-            df_combo['Mode'] = 'iPerf3'
-            df_combo['Server Name'] = f'{server}'
+            df_combo.loc[0,'Mode'] = 'iPerf3'
+            df_combo.loc[0,'Server Name'] = f'{server}'
             df_combo['datetime'] = df_upload['datetime']
             df_combo['Download Bandwidth (Mbps)'] = df_download['recieved_mbps']
             df_combo['Upload Bandwidth (Mbps)'] = df_upload['recieved_mbps']

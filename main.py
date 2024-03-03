@@ -16,8 +16,11 @@ TELSTRA_SYDNEY = ['Telstra - Sydney',12492]
 
 def print_results(df_total,output_file):
     '''Prints output results of testing on screen, and saves them to a prefined CSV'''
-    df_total.to_csv(output_file)
+    df_total.to_csv(f'Results/{output_file}')
     print(df_total[['Server Name','Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']])
+    print('-------\nAverage\n-------')
+    print(df_total[['Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']].mean())
+    print('-------')
     print(f'Results Found in {output_file}')
 
 
@@ -48,7 +51,7 @@ def main():
     num_of_runs = 3
     mode = 'speedtest'
     server = ['Telstra - Melbourne',12491]
-    output_file = f'{mode.title()}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
+    output_file_flag=False
 
     #Switch Statement - Dirty Because of older python versions
     # TODO When  Python 3.8 reaches EOL, update this to match function
@@ -81,11 +84,14 @@ def main():
             #Output File
             elif opt =='-o':
                 output_file=f'{arg}.csv'
+                output_file_flag=True
             else:
                print(f"ERROR: Unknown argument \n {HELP}")
                sys.exit()
-            #Push Flags to function
-    
+    #Last Minute hack, allows name to be Speedtest OR iPerf AFTER Flag is set    
+    if output_file_flag is False:
+         output_file = f'{mode.title()}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
+    #Push Flags to function
     df = run_test(mode=mode,server=server,num_of_runs=num_of_runs)
     print_results(df_total=df,output_file=output_file)
             
