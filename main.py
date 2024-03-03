@@ -2,6 +2,7 @@
 '''Speedtest / iPerf3 Automation CLI. Marries the Libraries we have created together into something we can control with command flags'''
 from datetime import datetime
 import getopt
+import os
 import sys
 from wrappers import Speedtest
 from wrappers import Iperf3Auto
@@ -16,7 +17,7 @@ TELSTRA_SYDNEY = ['Telstra - Sydney',12492]
 
 def print_results(df_total,output_file):
     '''Prints output results of testing on screen, and saves them to a prefined CSV'''
-    df_total.to_csv(f'results/{output_file}')
+    df_total.to_csv(f'{os.path.dirname(__file__)}/results/{output_file}')
     print(df_total[['Server Name','Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']])
     print('-------\nAverage\n-------')
     print(df_total[['Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']].mean())

@@ -22,7 +22,7 @@ class Speedtest:
         if os.name == "nt":
             prefix = ".\\bin\speedtest.exe"
         elif os.name == "posix":
-            prefix =  "bin/speedtest"
+            prefix = f'{os.path.dirname(os.path.dirname(__file__))}/bin/speedtest'
         return prefix
     def run_test(self,server_name = 'Server:',server_id = 14670,num_of_runs=6):
         '''Runs Speedtest Results, and outputs the values into a JSON, it will also return the output results as a Pandas Dataframe.
