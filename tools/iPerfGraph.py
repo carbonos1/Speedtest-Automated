@@ -28,7 +28,7 @@ def concat_files(path='results/',dfs=[]):
         # Append the dataframe to the list
         dfs.append(means)
 
-    return pd.concat(dfs, ignore_index=True)
+    return pd.concat(dfs, ignore_index=True).sort_values('file').reset_index().drop(columns='index')
 def main():
     ''' Builds the Graph for us :)'''
     
@@ -48,7 +48,7 @@ def main():
     for i,j in zip(iperf_results['file'],iperf_results['Download Bandwidth (Mbps)']):
         ax.annotate(str(round(j,2)),xy=(i,j))
 
-    for i,j in zip(iperf_results['file'],iperf_results['Download Bandwidth (Mbps)']):
+    for i,j in zip(iperf_results['file'],iperf_results['Upload Bandwidth (Mbps)']):
         ax.annotate(str(round(j,2)),xy=(i,j))
     #fig = plt.figure
     
