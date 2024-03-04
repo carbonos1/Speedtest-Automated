@@ -30,7 +30,7 @@ class Iperf3Auto:
             # Filter the dataframe for desired Columns only, there's a lot of data in here
             df = df.filter(['timesecs','num_streams','sent_bps','received_bps'])
             # Convert the bits_per_second to megabits_per_second and round to two decimals
-            df['datetime'] = datetime.fromtimestamp(int(df['timesecs']))
+            df['datetime'] = datetime.fromtimestamp(df.loc[0,'timesecs'])
             df['sent_mbps'] = round(df['sent_bps'] / 1e6, 2)
             df['recieved_mbps'] = round(df['received_bps'] / 1e6, 2)
             # Drop the bits_per_second columns
