@@ -1,7 +1,8 @@
-init:
-    pip install -r requirements.txt
+init: 
+	pip install -r requirements.txt
 
-test:
-    py.test tests
+test: 
+	py.test tests
 
-.PHONY: init test
+.PHONY: 
+	init test
