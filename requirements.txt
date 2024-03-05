@@ -1,0 +1,7 @@
+iperf3
+pandas
+matplotlib
+datetime
+numpy
+plotly
+kaleido
