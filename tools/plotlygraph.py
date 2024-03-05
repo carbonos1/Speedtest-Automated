@@ -3,6 +3,7 @@
 TOC 3/3/24: Rebuild for Refactor
  '''
 from datetime import datetime, timedelta
+import numpy as np
 import pandas as pd
 import glob
 import plotly.express as px
@@ -18,7 +19,7 @@ def concat_files(path='results/',dfs=[]):
         df = pd.read_csv(file)
 
         # Group by mode and calculate the mean for Both the Download and upload
-        means = df.groupby('Server Name').mean()
+        means = df.groupby('Server Name')[['Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)','Download Jitter','Latency','Upload Jitter']].mean()
 
         # Reset the index of means to make mode a column
         means = means.reset_index()

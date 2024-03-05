@@ -4,3 +4,5 @@ matplotlib
 glob
 datetime
 numpy
+plotly
+kaleido
