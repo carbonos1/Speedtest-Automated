@@ -36,6 +36,9 @@ if not the command should simply be "pip install -r requirements.txt"
 ```
 ### Flags:
 -m: sets mode, either iPerf or Speedtest.net
+
 -s: sets server, either IP / Hostname for iPerf or Server ID for speedtest. Default for speedtest is Telstra's Melbourne Server.
+
 -n: number of runs, adjusts the amount of times the script will test.
+
 -o: output file, name the file it is to output.
