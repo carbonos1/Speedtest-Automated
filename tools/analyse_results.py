@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 import pandas as pd
 import glob
 from datetime import datetime
+from streamlit_autorefresh import st_autorefresh
 
 def concat_files(path='results/',dfs=[]):
     '''Nabs all the files in the current directory, then combines them together'''
@@ -58,7 +59,8 @@ def main():
     #print(f'\n----------\nAverages Output:\n----------\n {iperf_results}')
     # Set page to wide mode
     st.set_page_config(layout="wide")
-
+    # Set up autorefresh to rerun the app every 60 seconds
+    st_autorefresh(interval=60000, key='some_key')  
     # Page Formatting
     # Build Performance Graph and output in streamlit
     st.header('Throughput Performance Graph')
