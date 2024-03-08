@@ -4,7 +4,7 @@ Script + Libraries used to run both SpeedTest + iPerf tests in bulk, record the 
 
 a basic interactive tool has been written using streamlit to perform basic analysis.
 
-![https://i.imgur.com/Sau1BOa.png]
+![Web screenshot](https://i.imgur.com/Sau1BOa.png)
 
 ## To-Do
 
