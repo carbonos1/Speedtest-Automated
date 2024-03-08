@@ -6,6 +6,8 @@ import pandas as pd
 import glob
 from datetime import datetime
 from streamlit_autorefresh import st_autorefresh
+from wrappers import Speedtest
+import os
 
 def concat_files(path='results/',dfs=[]):
     '''Nabs all the files in the current directory, then combines them together'''
@@ -62,13 +64,15 @@ def main():
     # Page Formatting
     # Build Performance Graph and output in streamlit
     st.header('Throughput Performance Graph')
-    # Create three columns
-    col1, col2, col3 = st.columns([2,8,1])
 
-    # Use the rightmost column to place the button
+# Dash Button Logic
+    col1, col2, col3 = st.columns([8,1,1])
+    with col2:
+        if st.button('Run Speed Test'):
+            Speedtest().run_test(num_of_runs=3).to_csv(f'{os.path.dirname(os.path.dirname(__file__))}/results/{f'Speedtest-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'}')
+            st.rerun()
     with col3:
         if st.checkbox('Enable Auto Refresh'):
-            #st.rerun()
             st_autorefresh(interval=60000, key='some_key')
 
     st.plotly_chart(build_graph(iperf_results),use_container_width=True,height=800)
