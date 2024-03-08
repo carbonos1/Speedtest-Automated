@@ -55,15 +55,22 @@ def build_graph(iperf_results):
 def main():
 
     iperf_results = concat_files()
-    iperf_results.to_excel('results/iPerfSummary.xlsx')
-    #print(f'\n----------\nAverages Output:\n----------\n {iperf_results}')
     # Set page to wide mode
     st.set_page_config(layout="wide")
     # Set up autorefresh to rerun the app every 60 seconds
-    st_autorefresh(interval=60000, key='some_key')  
+    #
     # Page Formatting
     # Build Performance Graph and output in streamlit
     st.header('Throughput Performance Graph')
+    # Create three columns
+    col1, col2, col3 = st.columns([2,8,1])
+
+    # Use the rightmost column to place the button
+    with col3:
+        if st.checkbox('Enable Auto Refresh'):
+            #st.rerun()
+            st_autorefresh(interval=60000, key='some_key')
+
     st.plotly_chart(build_graph(iperf_results),use_container_width=True,height=800)
     # Output Table and place in Streamlit.
     st.header('Throughput Performance Table')
