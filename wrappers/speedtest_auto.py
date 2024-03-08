@@ -20,7 +20,8 @@ class Speedtest:
         TODO: re-factor for new Directory Layout
         '''
         if os.name == "nt":
-            prefix = ".\\bin\speedtest.exe"
+            prefix = f'"{os.path.dirname(os.path.dirname(__file__))}\\bin\\speedtest.exe"'
+            print(prefix)
         elif os.name == "posix":
             prefix = f'{os.path.dirname(os.path.dirname(__file__))}/bin/speedtest'
         return prefix
