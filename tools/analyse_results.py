@@ -6,6 +6,8 @@ import pandas as pd
 import glob
 from datetime import datetime
 from streamlit_autorefresh import st_autorefresh
+from wrappers import Speedtest
+import os
 
 def concat_files(path='results/',dfs=[]):
     '''Nabs all the files in the current directory, then combines them together'''
@@ -16,7 +18,10 @@ def concat_files(path='results/',dfs=[]):
         df = pd.read_csv(file)
 
         # Group by mode and calculate the mean for Both the Download and upload
-        means = df.groupby('Server Name')[['Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)','Download Jitter','Latency','Upload Jitter']].mean()
+        try:
+            means = df.groupby('Server Name')[['Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)','Download Jitter','Latency','Upload Jitter']].mean()
+        except KeyError:
+            means = df.groupby('Server Name')[['Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']].mean()
 
         # Reset the index of means to make mode a column
         means = means.reset_index()
@@ -33,18 +38,40 @@ def build_graph(iperf_results):
 
     # Mash the two iperf plots back together again 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=iperf_results['file'],y=iperf_results['Download Bandwidth (Mbps)'],mode='lines+markers',name='Download (in Mbps)',marker_color='deepskyblue'))
+    fig.add_trace(go.Scatter(
+        x=iperf_results['file'],
+        y=iperf_results['Download Bandwidth (Mbps)'],
+        mode='lines+markers',
+        name='Download (in Mbps)',
+        marker_color='deepskyblue'
+        ))
     fig.add_trace(go.Scatter(x=iperf_results['file'],y=iperf_results['Upload Bandwidth (Mbps)'],mode='lines+markers',name='Upload (in Mbps)',marker_color='orangered'))
-    fig.add_trace(go.Scatter(x=iperf_results['file'],y=iperf_results['Download Jitter'],mode='lines+markers',name='Download jitter (in Ms)',visible='legendonly',marker_color='limegreen'))
-    fig.add_trace(go.Scatter(x=iperf_results['file'],y=iperf_results['Latency'],mode='lines+markers',name=' Idle Latency (in Ms)',visible='legendonly',marker_color='salmon'))
-    fig.add_trace(go.Scatter(x=iperf_results['file'],y=iperf_results['Upload Jitter'],mode='lines+markers',name=' Upload jitter (in Ms)',visible='legendonly',marker_color='magenta'))
-    # Add Data Points to graph
-    #for i,j in zip(iperf_results['file'],iperf_results['Download Bandwidth (Mbps)']):
-    #fig.add_annotation(x=i,y=j,text=str(round(j,2)),showarrow=False)
-
-    #for i,j in zip(iperf_results['file'],iperf_results['Upload Bandwidth (Mbps)']):
-    #fig.add_annotation(x=i,y=j,text=str(round(j,2)),showarrow=False)
-    # Set up Table Formatting & add Titles
+    try:
+        fig.add_trace(go.Scatter(
+            x=iperf_results['file'],
+            y=iperf_results['Download Jitter'],
+            mode='lines+markers',
+            name='Download jitter (in Ms)',
+            visible='legendonly',
+            marker_color='limegreen'))
+        fig.add_trace(go.Scatter(x=iperf_results['file'],
+            y=iperf_results['Latency'],
+            mode='lines+markers',
+            name=' Idle Latency (in Ms)',
+            visible='legendonly',
+            marker_color='salmon'
+            ))
+        fig.add_trace(go.Scatter(x=iperf_results['file'],
+            y=iperf_results['Upload Jitter'],
+            mode='lines+markers',
+            name=' Upload jitter (in Ms)',
+            visible='legendonly',
+            marker_color='magenta'
+            ))
+    except KeyError:
+        pass # If we don't have these lines, why draw them? It's better to Ignore TODO Come up with a more elegant solution here.
+    except Exception as exception:
+        print(exception)
     title = f'Speedtest performance results (generated {datetime.now()})'
     fig.update_xaxes(showline=True, linewidth=2, linecolor='black',gridcolor='lightgrey')
     fig.update_yaxes(showline=True, linewidth=2, linecolor='black',gridcolor='lightgrey')
@@ -62,13 +89,16 @@ def main():
     # Page Formatting
     # Build Performance Graph and output in streamlit
     st.header('Throughput Performance Graph')
-    # Create three columns
-    col1, col2, col3 = st.columns([2,8,1])
 
-    # Use the rightmost column to place the button
+# Dash Button Logic
+    col1, col2, col3 = st.columns([8,1,1])
+    with col2:
+        if st.button('Run Speed Test'):
+            file = f'Speedtest-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
+            Speedtest().run_test(num_of_runs=3).to_csv(f'{os.path.dirname(os.path.dirname(__file__))}/results/{file}')
+            st.rerun()
     with col3:
         if st.checkbox('Enable Auto Refresh'):
-            #st.rerun()
             st_autorefresh(interval=60000, key='some_key')
 
     st.plotly_chart(build_graph(iperf_results),use_container_width=True,height=800)
