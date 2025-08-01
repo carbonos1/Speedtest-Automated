@@ -1,4 +1,4 @@
-#!/bin/python
+#!/usr/bin/env python3
 '''Python Script for graphing out iPerf3 results as the product of "pyperftest.py"
 TOC 3/3/24: Rebuild for Refactor
  '''
@@ -39,17 +39,17 @@ def main():
 
     print(f'\n----------\nAverages Output:\n----------\n {iperf_results}')
     # Mash the two iperf plots back together again 
-    ax = iperf_results.plot(x='file',y='Download Bandwidth (Mbps)',label='Download (in Mbps)',figsize=(20, 10))
+    ax = iperf_results.plot(x='file',y='Download Bandwidth (Mbps)',label='Download (in Mbps)',figsize=(10, 5))
     iperf_results.plot(x='file',y='Upload Bandwidth (Mbps)',label='Upload (in Mbps)',ax=ax)
     ax.scatter(x=iperf_results['file'],y=iperf_results['Download Bandwidth (Mbps)'])
     ax.scatter(x=iperf_results['file'],y=iperf_results['Upload Bandwidth (Mbps)'])
     
     # Add Data Points to graph
-    #for i,j in zip(iperf_results['file'],iperf_results['Download Bandwidth (Mbps)']):
-    #    ax.annotate(str(round(j,2)),xy=(i,j))
+    for i,j in zip(iperf_results['file'],iperf_results['Download Bandwidth (Mbps)']):
+        ax.annotate(str(round(j,2)),xy=(i,j))
 
-    #for i,j in zip(iperf_results['file'],iperf_results['Upload Bandwidth (Mbps)']):
-    #    ax.annotate(str(round(j,2)),xy=(i,j))
+    for i,j in zip(iperf_results['file'],iperf_results['Upload Bandwidth (Mbps)']):
+        ax.annotate(str(round(j,2)),xy=(i,j))
     #fig = plt.figure
     
     # Set up Table Formatting & add Titles
@@ -63,7 +63,6 @@ def main():
     plt.savefig(f'results/{title}.svg')
     #plt.show()
    
-
 
 
 

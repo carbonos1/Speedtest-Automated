@@ -19,6 +19,8 @@ class Iperf3Auto:
         client.server_hostname = server
         client.duration = duration
         client.reverse = reverse
+        # Set the number of streams to 10 for increased throughput on higher bandwidth links
+        client.num_streams = 10
         # Run the test and get the result object
         result = client.run()
         # Check if the test was successful
