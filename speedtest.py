@@ -45,7 +45,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Speedtest / iPerf3 Automation CLI"
     )
-    parser.add_argument('-m', '--mode', choices=['speedtest', 'iperf'], default='speedtest',
+    parser.add_argument('-m', '--mode', choices=['speedtest', 'iperf', 's', 'i'], default='speedtest',
                         help='Test mode: speedtest or iperf (default: speedtest)')
     parser.add_argument('-n', '--num-of-runs', type=int, default=3,
                         help='Number of runs (default: 3)')
