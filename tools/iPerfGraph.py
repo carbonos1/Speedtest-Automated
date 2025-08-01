@@ -1,4 +1,4 @@
-#!/bin/python
+#!/usr/bin/env python3
 '''Python Script for graphing out iPerf3 results as the product of "pyperftest.py"
 TOC 3/3/24: Rebuild for Refactor
  '''
@@ -63,7 +63,6 @@ def main():
     plt.savefig(f'results/{title}.svg')
     #plt.show()
    
-
 
 
 

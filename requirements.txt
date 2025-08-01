@@ -2,6 +2,7 @@ iperf3
 pandas
 matplotlib
 datetime
+dash
 numpy
 plotly
 kaleido
