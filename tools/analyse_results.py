@@ -3,36 +3,35 @@ import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
-import glob
 from datetime import datetime
 from streamlit_autorefresh import st_autorefresh
-from wrappers import Speedtest
-import os
+from wrappers.database import init_database, get_all_results, insert_speedtest
 
-def concat_files(path='results/',dfs=[]):
-    '''Nabs all the files in the current directory, then combines them together'''
-    # Outlines files in current directory
-    files = glob.glob(path + "/*.csv")
-    for file in files:
-         # Read each file as a pandas dataframe
-        df = pd.read_csv(file)
-
-        # Group by mode and calculate the mean for Both the Download and upload
+def get_results_summary():
+    '''Get summary results from the SQLite database grouped by file/timestamp'''
+    speedtest, iperf = get_all_results()
+    
+    if not speedtest.empty:
+        speedtest['file'] = pd.to_datetime(speedtest['timestamp']).dt.strftime('%Y-%m-%d_%H-%M-%S')
+        speedtest_means = speedtest.groupby('file')[['Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']].mean().reset_index()
+        speedtest_means['Server Name'] = speedtest.groupby('file')['server_name'].first()
         try:
-            means = df.groupby('Server Name')[['Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)','Download Jitter','Latency','Upload Jitter']].mean()
+            jitter_cols = speedtest.groupby('file')[['Download Jitter','Latency','Upload Jitter']].mean()
+            speedtest_means = speedtest_means.merge(jitter_cols, left_on='file', right_index=True)
         except KeyError:
-            means = df.groupby('Server Name')[['Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']].mean()
-
-        # Reset the index of means to make mode a column
-        means = means.reset_index()
-
-        # Add the file name as a column
-        means["file"] = file[8:-4]
-
-        # Append the dataframe to the list
-        dfs.append(means)
-
-    return pd.concat(dfs, ignore_index=True).sort_values('file').reset_index().drop(columns='index')
+            pass
+    else:
+        speedtest_means = pd.DataFrame()
+    
+    if not iperf.empty:
+        iperf['file'] = pd.to_datetime(iperf['test_datetime']).dt.strftime('%Y-%m-%d_%H-%M-%S')
+        iperf_means = iperf.groupby('file')[['Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']].mean().reset_index()
+        iperf_means['Server Name'] = iperf.groupby('file')['server_name'].first()
+    else:
+        iperf_means = pd.DataFrame()
+    
+    combined = pd.concat([speedtest_means, iperf_means], ignore_index=True)
+    return combined.sort_values('file').reset_index(drop=True) if not combined.empty else combined
 def build_graph(iperf_results):
     ''' Builds the Graph for us :)'''
 
@@ -80,29 +79,22 @@ def build_graph(iperf_results):
     return fig
 
 def main():
-
-    iperf_results = concat_files()
-    # Set page to wide mode
+    init_database()
+    iperf_results = get_results_summary()
     st.set_page_config(layout="wide")
-    # Set up autorefresh to rerun the app every 60 seconds
-    #
-    # Page Formatting
-    # Build Performance Graph and output in streamlit
     st.header('Throughput Performance Graph')
 
-# Dash Button Logic
     col1, col2, col3 = st.columns([8,1,1])
     with col2:
         if st.button('Run Speed Test'):
-            file = f'Speedtest-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
-            Speedtest().run_test(num_of_runs=3).to_csv(f'{os.path.dirname(os.path.dirname(__file__))}/results/{file}')
+            df = Speedtest().run_test(num_of_runs=3)
+            insert_speedtest(df)
             st.rerun()
     with col3:
         if st.checkbox('Enable Auto Refresh'):
             st_autorefresh(interval=60000, key='some_key')
 
     st.plotly_chart(build_graph(iperf_results),use_container_width=True,height=800)
-    # Output Table and place in Streamlit.
     st.header('Throughput Performance Table')
     st.dataframe(iperf_results,use_container_width=True)
 

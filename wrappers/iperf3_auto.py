@@ -3,6 +3,7 @@
 import iperf3 # This Library is doing the leg work ere
 import pandas as pd
 from datetime import datetime
+from wrappers.database import init_database, insert_iperf
 
 class Iperf3Auto:
     """ Main Class of File

@@ -3,6 +3,7 @@ This modules allows us to generate a speedtest.net result, and convert it into p
 import os
 import json
 import pandas as pd
+from wrappers.database import init_database, insert_speedtest
 
 class Speedtest:
     """ Main Class of File,
