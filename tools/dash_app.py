@@ -90,6 +90,8 @@ app.layout = html.Div([
         n_intervals=0
     ),
     
+    dcc.Store(id='test-trigger', data=0),
+    
     dcc.Loading(
         id='loading-graph',
         type='default',
@@ -187,10 +189,10 @@ def toggle_custom_input(selected_value):
      Output('results-table', 'data'),
      Output('results-table', 'columns')],
     [Input('refresh-interval', 'n_intervals'),
-     Input('run-test-btn', 'n_clicks')],
+     Input('test-trigger', 'data')],
     prevent_initial_call=False
 )
-def update_dashboard(n_intervals, n_clicks):
+def update_dashboard(n_intervals, test_trigger):
     results = get_results_summary()
     
     if results.empty:
@@ -260,13 +262,15 @@ def toggle_autorefresh(value):
 
 @callback(
     [Output('progress-message', 'children'),
-     Output('progress-message', 'style')],
+     Output('progress-message', 'style'),
+     Output('test-trigger', 'data')],
     Input('run-test-btn', 'n_clicks'),
     [State('server-dropdown', 'value'),
-     State('custom-server-input', 'value')],
+     State('custom-server-input', 'value'),
+     State('test-trigger', 'data')],
     prevent_initial_call=True
 )
-def run_speedtest(n_clicks, server_selection, custom_server_id):
+def run_speedtest(n_clicks, server_selection, custom_server_id, current_trigger):
     if n_clicks > 0:
         server_id = custom_server_id if server_selection == 'custom' else server_selection
         
@@ -280,7 +284,7 @@ def run_speedtest(n_clicks, server_selection, custom_server_id):
                 'fontSize': '14px',
                 'fontWeight': '500',
                 'display': 'block'
-            }
+            }, current_trigger
         
         try:
             df = Speedtest().run_test(server_id=int(server_id), num_of_runs=3)
@@ -312,7 +316,7 @@ def run_speedtest(n_clicks, server_selection, custom_server_id):
                 'fontSize': '14px',
                 'fontWeight': '500',
                 'display': 'block'
-            }
+            }, current_trigger + 1
         except Exception as e:
             return f'Error running speedtest: {str(e)}', {
                 'marginTop': '20px',
@@ -323,9 +327,9 @@ def run_speedtest(n_clicks, server_selection, custom_server_id):
                 'fontSize': '14px',
                 'fontWeight': '500',
                 'display': 'block'
-            }
+            }, current_trigger
     
-    return '', {'display': 'none'}
+    return '', {'display': 'none'}, current_trigger
 
 
 if __name__ == '__main__':
