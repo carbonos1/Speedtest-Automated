@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-from dash import Dash, dcc, html, dash_table, Input, Output, State, callback, ctx
-import plotly.graph_objects as go
+import os
+import sys
 from datetime import datetime
 import pandas as pd
-import sys
-import os
+import plotly.graph_objects as go
+from dash import Dash, dcc, html, dash_table, Input, Output, State, callback, ctx
 
+# Ensure the project root is in the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from wrappers.database import init_database, insert_speedtest
@@ -53,19 +54,25 @@ app.layout = html.Div([
         ], style={'flex': '1', 'marginRight': '20px'}),
         
         html.Div([
-            html.Button('Run Speed Test', id='run-test-btn', n_clicks=0, 
-                       style={
-                           'padding': '12px 24px',
-                           'backgroundColor': '#0066cc',
-                           'color': 'white',
-                           'border': 'none',
-                           'borderRadius': '4px',
-                           'cursor': 'pointer',
-                           'fontSize': '14px',
-                           'fontWeight': '500',
-                           'marginBottom': '10px',
-                           'width': '100%'
-                       }),
+            dcc.Loading(
+                id='loading-button',
+                type='circle',
+                children=[
+                    html.Button('Run Speed Test', id='run-test-btn', n_clicks=0, 
+                               style={
+                                   'padding': '12px 24px',
+                                   'backgroundColor': '#0066cc',
+                                   'color': 'white',
+                                   'border': 'none',
+                                   'borderRadius': '4px',
+                                   'cursor': 'pointer',
+                                   'fontSize': '14px',
+                                   'fontWeight': '500',
+                                   'marginBottom': '10px',
+                                   'width': '100%'
+                               })
+                ]
+            ),
             dcc.Checklist(
                 id='autorefresh-toggle',
                 options=[{'label': ' Enable Auto Refresh (60s)', 'value': 'enabled'}],
@@ -245,8 +252,17 @@ def update_dashboard(n_intervals, test_trigger):
         if trace.marker.size is None or trace.marker.size < 6:
             trace.marker.size = 6
     
-    results_clean = results.replace({pd.NA: None, float('nan'): None})
-    table_data = results_clean.to_dict('records')
+    # Safely handle NaN values so we generate valid JSON without 'NaN' literals
+    table_data = []
+    for row in results.to_dict('records'):
+        clean_row = {}
+        for k, v in row.items():
+            if pd.isna(v) or v is pd.NA:
+                clean_row[k] = None
+            else:
+                clean_row[k] = v
+        table_data.append(clean_row)
+        
     table_columns = [{'name': col, 'id': col} for col in results.columns]
     
     return fig, table_data, table_columns
@@ -263,7 +279,8 @@ def toggle_autorefresh(value):
 @callback(
     [Output('progress-message', 'children'),
      Output('progress-message', 'style'),
-     Output('test-trigger', 'data')],
+     Output('test-trigger', 'data'),
+     Output('run-test-btn', 'disabled')],
     Input('run-test-btn', 'n_clicks'),
     [State('server-dropdown', 'value'),
      State('custom-server-input', 'value'),
@@ -284,30 +301,18 @@ def run_speedtest(n_clicks, server_selection, custom_server_id, current_trigger)
                 'fontSize': '14px',
                 'fontWeight': '500',
                 'display': 'block'
-            }, current_trigger
+            }, current_trigger, False
         
         try:
+            # Note: insert_speedtest will automatically calculate and store only the average run
             df = Speedtest().run_test(server_id=int(server_id), num_of_runs=3)
+            insert_speedtest(df)
             
-            avg_df = pd.DataFrame([{
-                'Mode': df['Mode'].iloc[0],
-                'Timestamp': df['Timestamp'].iloc[0],
-                'Server Id': df['Server Id'].iloc[0],
-                'Server Name': df['Server Name'].iloc[0],
-                'Location': df['Location'].iloc[0],
-                'Client IP Address': df['Client IP Address'].iloc[0],
-                'Download Bandwidth (Mbps)': df['Download Bandwidth (Mbps)'].mean(),
-                'Upload Bandwidth (Mbps)': df['Upload Bandwidth (Mbps)'].mean(),
-                'Latency': df['Latency'].mean(),
-                'Idle Jitter': df['Idle Jitter'].mean(),
-                'Download Jitter': df['Download Jitter'].mean(),
-                'Upload Jitter': df['Upload Jitter'].mean(),
-                'Result URL': df['Result URL'].iloc[0]
-            }])
+            # Since insert_speedtest performs averaging, let's fetch the last inserted average to display in the success message
+            avg_dl = df['Download Bandwidth (Mbps)'].mean()
+            avg_ul = df['Upload Bandwidth (Mbps)'].mean()
             
-            insert_speedtest(avg_df)
-            
-            return f'Speedtest completed successfully! Average - Download: {avg_df["Download Bandwidth (Mbps)"].iloc[0]:.2f} Mbps, Upload: {avg_df["Upload Bandwidth (Mbps)"].iloc[0]:.2f} Mbps', {
+            return f'Speedtest completed successfully! Average of 3 runs - Download: {avg_dl:.2f} Mbps, Upload: {avg_ul:.2f} Mbps', {
                 'marginTop': '20px',
                 'padding': '15px',
                 'backgroundColor': '#e8f5e9',
@@ -316,7 +321,7 @@ def run_speedtest(n_clicks, server_selection, custom_server_id, current_trigger)
                 'fontSize': '14px',
                 'fontWeight': '500',
                 'display': 'block'
-            }, current_trigger + 1
+            }, current_trigger + 1, False
         except Exception as e:
             return f'Error running speedtest: {str(e)}', {
                 'marginTop': '20px',
@@ -327,9 +332,9 @@ def run_speedtest(n_clicks, server_selection, custom_server_id, current_trigger)
                 'fontSize': '14px',
                 'fontWeight': '500',
                 'display': 'block'
-            }, current_trigger
+            }, current_trigger, False
     
-    return '', {'display': 'none'}, current_trigger
+    return '', {'display': 'none'}, current_trigger, False
 
 
 if __name__ == '__main__':

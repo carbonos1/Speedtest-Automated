@@ -65,6 +65,26 @@ def init_database():
 
 def insert_speedtest(df):
     """Insert speedtest results into the database."""
+    if df.empty:
+        return
+    if len(df) > 1:
+        # Store only the average of all runs
+        df = pd.DataFrame([{
+            'Mode': df['Mode'].iloc[0] if 'Mode' in df.columns else 'SpeedTest',
+            'Timestamp': df['Timestamp'].iloc[0] if 'Timestamp' in df.columns else None,
+            'Server Id': df['Server Id'].iloc[0] if 'Server Id' in df.columns else None,
+            'Server Name': df['Server Name'].iloc[0] if 'Server Name' in df.columns else None,
+            'Location': df['Location'].iloc[0] if 'Location' in df.columns else None,
+            'Client IP Address': df['Client IP Address'].iloc[0] if 'Client IP Address' in df.columns else None,
+            'Download Bandwidth (Mbps)': df['Download Bandwidth (Mbps)'].mean() if 'Download Bandwidth (Mbps)' in df.columns else None,
+            'Upload Bandwidth (Mbps)': df['Upload Bandwidth (Mbps)'].mean() if 'Upload Bandwidth (Mbps)' in df.columns else None,
+            'Latency': df['Latency'].mean() if 'Latency' in df.columns else None,
+            'Idle Jitter': df['Idle Jitter'].mean() if 'Idle Jitter' in df.columns else None,
+            'Download Jitter': df['Download Jitter'].mean() if 'Download Jitter' in df.columns else None,
+            'Upload Jitter': df['Upload Jitter'].mean() if 'Upload Jitter' in df.columns else None,
+            'Result URL': df['Result URL'].iloc[0] if 'Result URL' in df.columns else None
+        }])
+
     with get_connection() as conn:
         for _, row in df.iterrows():
             conn.execute('''
@@ -91,6 +111,20 @@ def insert_speedtest(df):
 
 def insert_iperf(df):
     """Insert iperf results into the database."""
+    if df.empty:
+        return
+    if len(df) > 1:
+        # Store only the average of all runs
+        df = pd.DataFrame([{
+            'Mode': df['Mode'].iloc[0] if 'Mode' in df.columns else 'iPerf3',
+            'Server Name': df['Server Name'].iloc[0] if 'Server Name' in df.columns else None,
+            'datetime': df['datetime'].iloc[0] if 'datetime' in df.columns else None,
+            'Download Bandwidth (Mbps)': df['Download Bandwidth (Mbps)'].mean() if 'Download Bandwidth (Mbps)' in df.columns else None,
+            'Upload Bandwidth (Mbps)': df['Upload Bandwidth (Mbps)'].mean() if 'Upload Bandwidth (Mbps)' in df.columns else None,
+            'Number of Streams (DL)': int(df['Number of Streams (DL)'].iloc[0]) if 'Number of Streams (DL)' in df.columns else None,
+            'Number of Streams (UL)': int(df['Number of Streams (UL)'].iloc[0]) if 'Number of Streams (UL)' in df.columns else None
+        }])
+
     with get_connection() as conn:
         for _, row in df.iterrows():
             conn.execute('''
