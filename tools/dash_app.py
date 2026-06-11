@@ -339,4 +339,4 @@ def run_speedtest(n_clicks, server_selection, custom_server_id, current_trigger)
 
 if __name__ == '__main__':
     init_database()
-    app.run(debug=True, port=8050)
+    app.run(debug=True, port=8050, host='0.0.0.0')
