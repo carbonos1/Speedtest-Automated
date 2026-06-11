@@ -6,7 +6,7 @@ import os
 import sys
 from wrappers import Speedtest
 from wrappers import Iperf3Auto
-from wrappers.database import init_database, insert_speedtest, insert_iperf
+from wrappers.database import init_database, insert_speedtest, insert_iperf, db_is_empty, csv_files_exist, migrate_csv_to_db
 
 HELP = \
     f"\nSpeedTest-Automated\n"\
@@ -47,6 +47,11 @@ def run_test(mode='speedtest',server=['Telstra - Melbourne',12491],num_of_runs=3
 def main():
     '''Primary Function of Script, controls cli control logic, and interprets flags for our use :)'''
     init_database()
+    
+    if db_is_empty() and csv_files_exist():
+        print('First run detected - migrating legacy CSV files to SQLite...')
+        migrate_csv_to_db()
+        print('Migration complete.')
 
     parser = argparse.ArgumentParser(
         description="Speedtest / iPerf3 Automation CLI"

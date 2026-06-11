@@ -195,6 +195,23 @@ def get_summary_by_server():
         
     return speedtest, iperf
 
+def db_is_empty():
+    """Check if the database has no data."""
+    with get_connection() as conn:
+        speedtest_count = conn.execute('SELECT COUNT(*) FROM speedtest_results').fetchone()[0]
+        iperf_count = conn.execute('SELECT COUNT(*) FROM iperf_results').fetchone()[0]
+        return speedtest_count == 0 and iperf_count == 0
+
+def csv_files_exist(results_dir=None):
+    """Check if there are any CSV files in the results directory."""
+    import glob
+    
+    if results_dir is None:
+        results_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'results')
+    
+    csv_files = glob.glob(f'{results_dir}/**/*.csv', recursive=True)
+    return len(csv_files) > 0
+
 def migrate_csv_to_db(results_dir=None):
     """Migrate existing CSV files to the database."""
     import glob
