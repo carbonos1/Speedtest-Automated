@@ -14,18 +14,40 @@ from tools.analyse_results import get_results_summary, build_graph
 app = Dash(__name__)
 
 app.layout = html.Div([
-    html.H1('Throughput Performance Graph', style={'marginBottom': '20px'}),
+    html.H1('Throughput Performance Dashboard', 
+            style={'marginBottom': '30px', 'color': '#1a1a1a', 'fontSize': '2.5rem'}),
     
     html.Div([
         html.Button('Run Speed Test', id='run-test-btn', n_clicks=0, 
-                   style={'marginRight': '10px', 'padding': '8px 16px'}),
+                   style={
+                       'marginRight': '20px', 
+                       'padding': '12px 24px',
+                       'backgroundColor': '#0066cc',
+                       'color': 'white',
+                       'border': 'none',
+                       'borderRadius': '4px',
+                       'cursor': 'pointer',
+                       'fontSize': '14px',
+                       'fontWeight': '500'
+                   }),
         dcc.Checklist(
             id='autorefresh-toggle',
-            options=[{'label': ' Enable Auto Refresh', 'value': 'enabled'}],
+            options=[{'label': ' Enable Auto Refresh (60s)', 'value': 'enabled'}],
             value=[],
-            style={'display': 'inline-block', 'padding': '8px'}
+            style={
+                'display': 'inline-block', 
+                'padding': '12px',
+                'color': '#333333',
+                'fontSize': '14px'
+            }
         ),
-    ], style={'marginBottom': '20px'}),
+    ], style={
+        'marginBottom': '30px',
+        'padding': '20px',
+        'backgroundColor': '#f5f5f5',
+        'borderRadius': '8px',
+        'border': '1px solid #e0e0e0'
+    }),
     
     dcc.Interval(
         id='refresh-interval',
@@ -36,29 +58,53 @@ app.layout = html.Div([
     
     dcc.Graph(id='performance-graph', style={'height': '800px'}),
     
-    html.H2('Throughput Performance Table', style={'marginTop': '40px', 'marginBottom': '20px'}),
+    html.H2('Throughput Performance Table', 
+            style={'marginTop': '50px', 'marginBottom': '20px', 'color': '#1a1a1a'}),
     
     dash_table.DataTable(
         id='results-table',
         page_size=20,
         sort_action='native',
         filter_action='native',
-        style_table={'overflowX': 'auto'},
+        style_table={
+            'overflowX': 'auto',
+            'border': '1px solid #e0e0e0',
+            'borderRadius': '8px'
+        },
         style_cell={
             'textAlign': 'left',
-            'padding': '10px',
-            'backgroundColor': 'white'
+            'padding': '12px',
+            'backgroundColor': 'white',
+            'color': '#333333',
+            'fontSize': '14px',
+            'borderBottom': '1px solid #e8e8e8'
         },
         style_header={
-            'backgroundColor': 'rgb(230, 230, 230)',
-            'fontWeight': 'bold'
+            'backgroundColor': '#f0f0f0',
+            'fontWeight': '600',
+            'color': '#1a1a1a',
+            'borderBottom': '2px solid #d0d0d0',
+            'fontSize': '14px'
         },
-        style_data_conditional=[{
-            'if': {'row_index': 'odd'},
-            'backgroundColor': 'rgb(248, 248, 248)'
-        }]
+        style_data_conditional=[
+            {
+                'if': {'row_index': 'odd'},
+                'backgroundColor': '#fafafa'
+            },
+            {
+                'if': {'state': 'selected'},
+                'backgroundColor': '#e3f2fd',
+                'color': '#1a1a1a'
+            }
+        ]
     )
-], style={'maxWidth': '100%', 'padding': '20px'})
+], style={
+    'maxWidth': '1400px',
+    'margin': '0 auto',
+    'padding': '40px',
+    'backgroundColor': '#ffffff',
+    'fontFamily': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+})
 
 
 @callback(
@@ -76,11 +122,52 @@ def update_dashboard(n_intervals, n_clicks):
         fig = go.Figure()
         fig.update_layout(
             title=f'No data available (generated {datetime.now()})',
-            plot_bgcolor='white'
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            font=dict(color='#333333')
         )
         return fig, [], []
     
     fig = build_graph(results)
+    
+    fig.update_layout(
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        font=dict(color='#333333', size=12),
+        title_font=dict(size=18, color='#1a1a1a'),
+        xaxis=dict(
+            showgrid=True,
+            gridcolor='#e8e8e8',
+            gridwidth=1,
+            showline=True,
+            linewidth=2,
+            linecolor='#333333',
+            tickfont=dict(size=11, color='#333333')
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor='#e8e8e8',
+            gridwidth=1,
+            showline=True,
+            linewidth=2,
+            linecolor='#333333',
+            tickfont=dict(size=11, color='#333333')
+        ),
+        legend=dict(
+            bgcolor='rgba(255, 255, 255, 0.9)',
+            bordercolor='#e0e0e0',
+            borderwidth=1,
+            font=dict(size=12, color='#333333')
+        ),
+        margin=dict(l=60, r=40, t=60, b=60)
+    )
+    
+    for trace in fig.data:
+        if trace.line.width is None or trace.line.width < 2:
+            trace.line.width = 2.5
+        if trace.marker.size is None or trace.marker.size < 6:
+            trace.marker.size = 6
+    
     table_data = results.to_dict('records')
     table_columns = [{'name': col, 'id': col} for col in results.columns]
     
