@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from wrappers.database import init_database, insert_speedtest
 from wrappers import Speedtest
-from tools.analyse_results import get_results_summary, build_graph
+from tools.analysis import get_results_summary, build_graph
 
 PREDEFINED_SERVERS = [
     {'label': 'Telstra - Melbourne (12491)', 'value': '12491'},

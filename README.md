@@ -2,7 +2,7 @@
 
 Script + Libraries used to run both SpeedTest + iPerf tests in bulk, record the output, then Graph the results. Really is just a fancy wrapper to automate a lot of the tests I do en masse.
 
-a basic interactive tool has been written using streamlit to perform basic analysis.
+a basic interactive tool has been written using Dash to perform basic analysis.
 
 ![Web screenshot](https://i.imgur.com/Sau1BOa.png)
 
