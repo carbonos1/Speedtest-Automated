@@ -6,12 +6,22 @@ import pandas as pd
 from datetime import datetime
 from streamlit_autorefresh import st_autorefresh
 from wrappers.database import init_database, get_all_results, insert_speedtest
+from wrappers import Speedtest
+
+RENAME_MAP = {
+    'download_mbps': 'Download Bandwidth (Mbps)',
+    'upload_mbps': 'Upload Bandwidth (Mbps)',
+    'download_jitter': 'Download Jitter',
+    'upload_jitter': 'Upload Jitter',
+    'latency': 'Latency',
+}
 
 def get_results_summary():
     '''Get summary results from the SQLite database grouped by file/timestamp'''
     speedtest, iperf = get_all_results()
     
     if not speedtest.empty:
+        speedtest = speedtest.rename(columns=RENAME_MAP)
         speedtest['file'] = pd.to_datetime(speedtest['timestamp']).dt.strftime('%Y-%m-%d_%H-%M-%S')
         speedtest_means = speedtest.groupby('file')[['Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']].mean().reset_index()
         speedtest_means['Server Name'] = speedtest.groupby('file')['server_name'].first()
@@ -24,6 +34,7 @@ def get_results_summary():
         speedtest_means = pd.DataFrame()
     
     if not iperf.empty:
+        iperf = iperf.rename(columns=RENAME_MAP)
         iperf['file'] = pd.to_datetime(iperf['test_datetime']).dt.strftime('%Y-%m-%d_%H-%M-%S')
         iperf_means = iperf.groupby('file')[['Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']].mean().reset_index()
         iperf_means['Server Name'] = iperf.groupby('file')['server_name'].first()
