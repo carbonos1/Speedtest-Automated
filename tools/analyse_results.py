@@ -24,7 +24,7 @@ def get_results_summary():
         speedtest = speedtest.rename(columns=RENAME_MAP)
         speedtest['file'] = pd.to_datetime(speedtest['timestamp']).dt.strftime('%Y-%m-%d_%H-%M-%S')
         speedtest_means = speedtest.groupby('file')[['Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']].mean().reset_index()
-        speedtest_means['Server Name'] = speedtest.groupby('file')['server_name'].first()
+        speedtest_means['Server Name'] = speedtest.groupby('file')['server_name'].first().values
         try:
             jitter_cols = speedtest.groupby('file')[['Download Jitter','Latency','Upload Jitter']].mean()
             speedtest_means = speedtest_means.merge(jitter_cols, left_on='file', right_index=True)
@@ -37,7 +37,7 @@ def get_results_summary():
         iperf = iperf.rename(columns=RENAME_MAP)
         iperf['file'] = pd.to_datetime(iperf['test_datetime']).dt.strftime('%Y-%m-%d_%H-%M-%S')
         iperf_means = iperf.groupby('file')[['Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']].mean().reset_index()
-        iperf_means['Server Name'] = iperf.groupby('file')['server_name'].first()
+        iperf_means['Server Name'] = iperf.groupby('file')['server_name'].first().values
     else:
         iperf_means = pd.DataFrame()
     
