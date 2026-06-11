@@ -243,7 +243,8 @@ def update_dashboard(n_intervals, n_clicks):
         if trace.marker.size is None or trace.marker.size < 6:
             trace.marker.size = 6
     
-    table_data = results.to_dict('records')
+    results_clean = results.replace({pd.NA: None, float('nan'): None})
+    table_data = results_clean.to_dict('records')
     table_columns = [{'name': col, 'id': col} for col in results.columns]
     
     return fig, table_data, table_columns
