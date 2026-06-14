@@ -99,6 +99,8 @@ app.layout = html.Div([
     
     dcc.Store(id='test-trigger', data=0),
     
+    dcc.Download(id='download-data'),
+    
     dcc.Loading(
         id='loading-graph',
         type='default',
@@ -118,8 +120,21 @@ app.layout = html.Div([
         'display': 'none'
     }),
     
-    html.H2('Throughput Performance Table', 
-            style={'marginTop': '50px', 'marginBottom': '20px', 'color': '#1a1a1a'}),
+    html.Div([
+        html.H2('Throughput Performance Table', 
+                style={'margin': 0, 'color': '#1a1a1a'}),
+        html.Button('Download CSV', id='download-btn', n_clicks=0,
+                   style={
+                       'padding': '8px 16px',
+                       'backgroundColor': '#0066cc',
+                       'color': 'white',
+                       'border': 'none',
+                       'borderRadius': '4px',
+                       'cursor': 'pointer',
+                       'fontSize': '14px',
+                       'fontWeight': '500'
+                   }),
+    ], style={'display': 'flex', 'justifyContent': 'space-between', 'alignItems': 'center', 'marginTop': '50px', 'marginBottom': '20px'}),
     
     dash_table.DataTable(
         id='results-table',
@@ -335,6 +350,20 @@ def run_speedtest(n_clicks, server_selection, custom_server_id, current_trigger)
             }, current_trigger, False
     
     return '', {'display': 'none'}, current_trigger, False
+
+
+@callback(
+    Output('download-data', 'data'),
+    Input('download-btn', 'n_clicks'),
+    prevent_initial_call=True
+)
+def download_csv(n_clicks):
+    df = get_results_summary()
+    if df.empty:
+        return None
+    csv_string = df.to_csv(index=False)
+    filename = f'speedtest_results_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
+    return dict(content=csv_string, filename=filename)
 
 
 if __name__ == '__main__':
