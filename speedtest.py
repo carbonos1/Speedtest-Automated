@@ -6,6 +6,7 @@ import os
 import sys
 from wrappers import Speedtest
 from wrappers import Iperf3Auto
+from wrappers.database import init_database, insert_speedtest, insert_iperf, db_is_empty, csv_files_exist, migrate_csv_to_db
 
 HELP = \
     f"\nSpeedTest-Automated\n"\
@@ -15,14 +16,18 @@ HELP = \
 TELSTRA_MELBOURNE = ['Telstra - Melbourne',12491]
 TELSTRA_SYDNEY = ['Telstra - Sydney',12492]
 
-def print_results(df_total,output_file):
-    '''Prints output results of testing on screen, and saves them to a prefined CSV'''
-    df_total.to_csv(f'{os.path.dirname(__file__)}/results/{output_file}')
+def print_results(df_total, mode):
+    '''Prints output results of testing on screen, and saves them to the SQLite database'''
+    if 's' in mode.lower():
+        insert_speedtest(df_total)
+    else:
+        insert_iperf(df_total)
+    
     print(df_total[['Server Name','Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']])
     print('-------\nAverage\n-------')
     print(df_total[['Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']].mean())
     print('-------')
-    print(f'Results Found in {output_file}')
+    print(f'Results saved to SQLite database')
 
 
 def run_test(mode='speedtest',server=['Telstra - Melbourne',12491],num_of_runs=3):
@@ -41,6 +46,12 @@ def run_test(mode='speedtest',server=['Telstra - Melbourne',12491],num_of_runs=3
 
 def main():
     '''Primary Function of Script, controls cli control logic, and interprets flags for our use :)'''
+    init_database()
+    
+    if db_is_empty() and csv_files_exist():
+        print('First run detected - migrating legacy CSV files to SQLite...')
+        migrate_csv_to_db()
+        print('Migration complete.')
 
     parser = argparse.ArgumentParser(
         description="Speedtest / iPerf3 Automation CLI"
@@ -53,17 +64,13 @@ def main():
                         help='Server ID or IP address')
     parser.add_argument('-l', '--location', type=str,
                         help='Location shortcut (mel, syd, etc.)')
-    parser.add_argument('-o', '--outputfile', type=str,
-                        help='Output file name (without .csv)')
 
     args = parser.parse_args()
 
-    # Defaults
     num_of_runs = args.num_of_runs
     mode = args.mode
     server = ['Telstra - Melbourne', 12491]
 
-    # Handle location or server-id
     if args.location:
         if 'mel' in args.location.lower():
             server = ['Telstra - Melbourne', 12491]
@@ -74,15 +81,8 @@ def main():
     if args.server_id:
         server = [f'Custom {mode.title()} Server', args.server_id]
 
-    # Output file
-    if args.outputfile:
-        output_file = f'{args.outputfile}.csv'
-    else:
-        output_file = f'{mode.title()}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
-
-    # Run test and print results
     df = run_test(mode=mode, server=server, num_of_runs=num_of_runs)
-    print_results(df_total=df, output_file=output_file)
+    print_results(df_total=df, mode=mode)
 
 if __name__ == "__main__":
     main()
