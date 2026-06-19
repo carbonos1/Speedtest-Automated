@@ -420,8 +420,13 @@ def get_all_session_results():
     if sessions.empty:
         return sessions
 
-    # Use started_at as the temporal anchor
-    ts = pd.to_datetime(sessions['started_at'], errors='coerce', utc=True)
+    # Use started_at as the temporal anchor.
+    # format='mixed' is required because speedtest timestamps are ISO 8601
+    # with 'Z' suffix (e.g. 2025-06-16T01:17:14Z) while iperf timestamps
+    # from the legacy migration are space-separated without a timezone
+    # (e.g. 2024-10-12 18:53:11). Without format='mixed' pandas fails to
+    # parse the non-ISO timestamps, causing them to drop out of the graph.
+    ts = pd.to_datetime(sessions['started_at'], errors='coerce', format='mixed', utc=True)
     sessions['datetime'] = ts.dt.strftime('%Y-%m-%d %H:%M:%S')
     sessions['file'] = ts.dt.strftime('%Y-%m-%d_%H-%M-%S')
 
