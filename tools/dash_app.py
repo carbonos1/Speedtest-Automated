@@ -294,18 +294,30 @@ def update_dashboard(n_intervals, test_trigger):
         if trace.marker.size is None or trace.marker.size < 6:
             trace.marker.size = 6
 
+    # Restrict table to the columns we actually want to show:
+    # identity columns + the five values the graph plots
+    TABLE_COLUMNS = [
+        'session_id', 'file', 'mode', 'num_runs', 'server_name', 'location',
+        'Download Bandwidth (Mbps)', 'Upload Bandwidth (Mbps)',
+        'Latency', 'Download Jitter', 'Upload Jitter',
+    ]
+
     # Safely handle NaN values so we generate valid JSON without 'NaN' literals
     table_data = []
     for row in results.to_dict('records'):
         clean_row = {}
-        for k, v in row.items():
+        for k in TABLE_COLUMNS:
+            if k not in row:
+                clean_row[k] = None
+                continue
+            v = row[k]
             if pd.isna(v) or v is pd.NA:
                 clean_row[k] = None
             else:
                 clean_row[k] = v
         table_data.append(clean_row)
 
-    table_columns = [{'name': col, 'id': col} for col in results.columns]
+    table_columns = [{'name': col, 'id': col} for col in TABLE_COLUMNS]
 
     return fig, table_data, table_columns
 
