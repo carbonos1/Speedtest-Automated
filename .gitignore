@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Binaries (download separately from speedtest.net/apps/cli)
+bin/speedtest
+bin/speedtest.exe
+bin/*.tgz
+
+# Results data (generated, not source)
+results/*.db
+results/*.db-journal
+results/*.db-wal
+results/*.xlsx
+results/*.png
+results/*.svg
+results/*:Zone.Identifier
+results/ping_log.csv
+
+# Backups
+*.bak
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

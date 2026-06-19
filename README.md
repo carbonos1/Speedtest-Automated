@@ -85,3 +85,8 @@ On first run, if the database is empty and legacy CSV files exist in `results/`,
 - `tools/ping_dash_app.py`: Separate Dash app for continuous ping monitoring with latency/jitter/packet loss graphs
 - `tools/iPerfGraph.py`: Matplotlib-based iPerf result graphing
 - `tools/migrate_csv.py`: Manual CSV-to-SQLite migration tool
+- `tools/migrate_to_sessions.py`: One-shot migration from legacy tables to the session/run schema (dry-run supported)
+
+## Security Note
+
+The Dash dashboard (`tools/dash_app.py`) is currently configured with `debug=True` and `host='0.0.0.0'`. This exposes the Werkzeug debugger to the network, which can allow arbitrary code execution if the debugger PIN is obtained. For production or LAN-exposed deployments, bind to `127.0.0.1` and set `debug=False`. A future phase will add authentication.

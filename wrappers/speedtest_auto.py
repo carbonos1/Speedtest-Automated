@@ -2,78 +2,98 @@
 This modules allows us to generate a speedtest.net result, and convert it into pandas dataframe'''
 import os
 import json
+import subprocess
 import pandas as pd
-from wrappers.database import init_database, insert_speedtest
+
 
 class Speedtest:
-    """ Main Class of File,
-    Contains the functions used to convert the Speedtest.net Binary into Pandas Dataframes so the code is a bit easier to play with
+    """Main class for running Speedtest.net tests via the CLI binary.
+    Converts results into Pandas DataFrames for downstream processing.
     """
-    def __init__(self) -> None:
-        ''' Set Pre-Defined servers for us to point to. TODO see if we can get these values automagically'''
-        GIGACOMM_MELBOURNE = ['GigaComm - Melbourne',36100]
-        TELSTRA_MELBOURNE = ['Telstra - Melbourne',12491]
-        GIGACOMM_SYDNEY = ['GigaComm - Sydney',36157]
-        TELSTRA_SYDNEY = ['Telstra - Sydney',12492]
+
     def speedtest_prefix(self):
-        '''Simple logic to adjust the speedtest CLI output for usage in differing Operating Systems.
-        TODO: this is a little janky, see if we can do this a bit better.
-        TODO: re-factor for new Directory Layout
-        '''
+        '''Build the speedtest CLI binary path for the current OS.'''
         if os.name == "nt":
-            prefix = f'"{os.path.dirname(os.path.dirname(__file__))}\\bin\\speedtest.exe"'
-            print(prefix)
+            return f'"{os.path.dirname(os.path.dirname(__file__))}\\bin\\speedtest.exe"'
         elif os.name == "posix":
-            prefix = f'{os.path.dirname(os.path.dirname(__file__))}/bin/speedtest'
-        return prefix
-    def run_test(self,server_name = 'Server:',server_id = 14670,num_of_runs=6):
-        '''Runs Speedtest Results, and outputs the values into a JSON, it will also return the output results as a Pandas Dataframe.
-        server_name = Name of the Server Passed'''
+            return f'{os.path.dirname(os.path.dirname(__file__))}/bin/speedtest'
+        raise RuntimeError(f'Unsupported OS: {os.name}')
+
+    def run_test(self, server_name='Server:', server_id=14670, num_of_runs=6, timeout=120):
+        '''Runs Speedtest tests and returns results as a Pandas DataFrame.
+
+        Args:
+            server_name: Name of the server passed (for display only).
+            server_id: Speedtest.net server ID to test against.
+            num_of_runs: Number of test iterations.
+            timeout: Per-run timeout in seconds.
+
+        Returns:
+            DataFrame with one row per run.
+        '''
         df_total = pd.DataFrame()
         for i in range(num_of_runs):
             print(f'Running {server_name} Speedtest #{i+1} ')
-            df = self.create_dataframe(os.popen(f'{self.speedtest_prefix()} -s {server_id} -f json --accept-license').read())
-            print(df[['Server Name','Location','Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']])
-            df_total = pd.concat([df_total,df],ignore_index=True)
+            df = self._run_single(server_id, timeout)
+            print(df[['Server Name', 'Location', 'Download Bandwidth (Mbps)', 'Upload Bandwidth (Mbps)']])
+            df_total = pd.concat([df_total, df], ignore_index=True)
         return df_total
-    def create_dataframe(self,input_str):
-        '''
-    Converts the input JSON Dictionary into a Pandas DataFrame.
-    Also Determines which values are stored / represented in the output CSV
-    Function initially Written by ChatGPT and tweaked by hand :)
-     '''
-        # Converts input string into JSON object
-        data = json.loads(input_str)
-        # Retrieve Data Values
+
+    def _run_single(self, server_id, timeout):
+        '''Execute a single speedtest run and parse the JSON output.'''
+        cmd = f'{self.speedtest_prefix()} -s {server_id} -f json --accept-license'
         try:
-            timestamp = data['timestamp']
-        except Exception:
-            timestamp = ''
-        server_id = data['server']['id']
-        server_name = data['server']['name']
-        location = data['server']['location']
-        ip_address = data['interface']['externalIp']
-        download_bandwidth = data['download']['bandwidth'] / 125000
-        upload_bandwidth = data['upload']['bandwidth'] / 125000
-        latency = data['ping']['latency']
-        idle_jitter  = data['ping']['jitter']
-        download_jitter  = data['download']['latency']['jitter']
-        upload_jitter  = data['upload']['latency']['jitter']
-        result_url = data['result']['url']
-        # Generate new Dataframe with our New Values
+            result = subprocess.run(
+                cmd, shell=True, capture_output=True, text=True, timeout=timeout
+            )
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(f'Speedtest timed out after {timeout}s for server {server_id}')
+        except FileNotFoundError:
+            raise RuntimeError('Speedtest binary not found. Ensure bin/speedtest exists.')
+
+        if result.returncode != 0:
+            stderr = result.stderr.strip() if result.stderr else 'unknown error'
+            raise RuntimeError(f'Speedtest failed (exit {result.returncode}): {stderr}')
+
+        return self.create_dataframe(result.stdout)
+
+    def create_dataframe(self, input_str):
+        '''Convert the speedtest JSON output string into a Pandas DataFrame.
+
+        Guards against missing keys in the JSON response so a partial
+        or unexpected payload doesn't crash with a bare KeyError.
+        '''
+        if not input_str or not input_str.strip():
+            raise RuntimeError('Speedtest returned empty output')
+
+        try:
+            data = json.loads(input_str)
+        except json.JSONDecodeError as e:
+            raise RuntimeError(f'Failed to parse speedtest JSON: {e}')
+
+        server = data.get('server', {})
+        interface = data.get('interface', {})
+        download = data.get('download', {})
+        upload = data.get('upload', {})
+        ping = data.get('ping', {})
+        result_info = data.get('result', {})
+
+        dl_bw = download.get('bandwidth')
+        ul_bw = upload.get('bandwidth')
+
         df = pd.DataFrame({
             'Mode': 'SpeedTest',
-            'Timestamp': [timestamp],
-            'Server Id': [server_id],
-            'Server Name': [server_name],
-            'Location': [location],
-            'Client IP Address': [ip_address],
-            'Download Bandwidth (Mbps)': [download_bandwidth],
-            'Upload Bandwidth (Mbps)': [upload_bandwidth],
-            'Latency' : [latency],
-            'Idle Jitter': [idle_jitter],
-            'Download Jitter': [download_jitter],
-            'Upload Jitter': [upload_jitter],
-            'Result URL': [result_url]
+            'Timestamp': [data.get('timestamp', '')],
+            'Server Id': [server.get('id')],
+            'Server Name': [server.get('name')],
+            'Location': [server.get('location')],
+            'Client IP Address': [interface.get('externalIp')],
+            'Download Bandwidth (Mbps)': [dl_bw / 125000 if dl_bw else None],
+            'Upload Bandwidth (Mbps)': [ul_bw / 125000 if ul_bw else None],
+            'Latency': [ping.get('latency')],
+            'Idle Jitter': [ping.get('jitter')],
+            'Download Jitter': [download.get('latency', {}).get('jitter')],
+            'Upload Jitter': [upload.get('latency', {}).get('jitter')],
+            'Result URL': [result_info.get('url')],
         })
         return df
