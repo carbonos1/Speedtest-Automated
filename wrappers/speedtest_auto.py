@@ -2,8 +2,15 @@
 This modules allows us to generate a speedtest.net result, and convert it into pandas dataframe'''
 import os
 import json
+import logging
 import subprocess
+from typing import Optional
+
 import pandas as pd
+
+from wrappers.utils import Bps_to_mbps
+
+logger = logging.getLogger(__name__)
 
 
 class Speedtest:
@@ -11,7 +18,7 @@ class Speedtest:
     Converts results into Pandas DataFrames for downstream processing.
     """
 
-    def speedtest_prefix(self):
+    def speedtest_prefix(self) -> str:
         '''Build the speedtest CLI binary path for the current OS.'''
         if os.name == "nt":
             return f'"{os.path.dirname(os.path.dirname(__file__))}\\bin\\speedtest.exe"'
@@ -19,7 +26,8 @@ class Speedtest:
             return f'{os.path.dirname(os.path.dirname(__file__))}/bin/speedtest'
         raise RuntimeError(f'Unsupported OS: {os.name}')
 
-    def run_test(self, server_name='Server:', server_id=14670, num_of_runs=6, timeout=120):
+    def run_test(self, server_name: str = 'Server:', server_id: int = 12491,
+                 num_of_runs: int = 6, timeout: int = 120) -> pd.DataFrame:
         '''Runs Speedtest tests and returns results as a Pandas DataFrame.
 
         Args:
@@ -33,13 +41,13 @@ class Speedtest:
         '''
         df_total = pd.DataFrame()
         for i in range(num_of_runs):
-            print(f'Running {server_name} Speedtest #{i+1} ')
+            logger.info(f'Running {server_name} Speedtest #{i+1}')
             df = self._run_single(server_id, timeout)
             print(df[['Server Name', 'Location', 'Download Bandwidth (Mbps)', 'Upload Bandwidth (Mbps)']])
             df_total = pd.concat([df_total, df], ignore_index=True)
         return df_total
 
-    def _run_single(self, server_id, timeout):
+    def _run_single(self, server_id: int, timeout: int) -> pd.DataFrame:
         '''Execute a single speedtest run and parse the JSON output.'''
         cmd = f'{self.speedtest_prefix()} -s {server_id} -f json --accept-license'
         try:
@@ -57,7 +65,7 @@ class Speedtest:
 
         return self.create_dataframe(result.stdout)
 
-    def create_dataframe(self, input_str):
+    def create_dataframe(self, input_str: str) -> pd.DataFrame:
         '''Convert the speedtest JSON output string into a Pandas DataFrame.
 
         Guards against missing keys in the JSON response so a partial
@@ -78,9 +86,6 @@ class Speedtest:
         ping = data.get('ping', {})
         result_info = data.get('result', {})
 
-        dl_bw = download.get('bandwidth')
-        ul_bw = upload.get('bandwidth')
-
         df = pd.DataFrame({
             'Mode': 'SpeedTest',
             'Timestamp': [data.get('timestamp', '')],
@@ -88,8 +93,8 @@ class Speedtest:
             'Server Name': [server.get('name')],
             'Location': [server.get('location')],
             'Client IP Address': [interface.get('externalIp')],
-            'Download Bandwidth (Mbps)': [dl_bw / 125000 if dl_bw else None],
-            'Upload Bandwidth (Mbps)': [ul_bw / 125000 if ul_bw else None],
+            'Download Bandwidth (Mbps)': [Bps_to_mbps(download.get('bandwidth'))],
+            'Upload Bandwidth (Mbps)': [Bps_to_mbps(upload.get('bandwidth'))],
             'Latency': [ping.get('latency')],
             'Idle Jitter': [ping.get('jitter')],
             'Download Jitter': [download.get('latency', {}).get('jitter')],
@@ -97,3 +102,4 @@ class Speedtest:
             'Result URL': [result_info.get('url')],
         })
         return df
+

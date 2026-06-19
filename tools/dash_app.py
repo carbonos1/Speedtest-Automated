@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 import os
 import sys
+import threading
 from datetime import datetime
 import pandas as pd
 import plotly.graph_objects as go
-from dash import Dash, dcc, html, dash_table, Input, Output, State, callback, ctx
+from dash import Dash, dcc, html, dash_table, Input, Output, State, callback, ctx, no_update
 
 # Ensure the project root is in the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -12,6 +13,24 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from wrappers.database import init_database, insert_session
 from wrappers import Speedtest
 from tools.analysis import get_results_summary, build_graph
+
+# Background test task state (thread-safe via GIL for simple dict ops)
+_test_status = {'running': False, 'result': None, 'error': None}
+
+
+def _run_speedtest_bg(server_id):
+    """Run speedtest in a background thread; stores result in _test_status."""
+    global _test_status
+    try:
+        df = Speedtest().run_test(server_id=int(server_id), num_of_runs=3)
+        insert_session(df, 'speedtest')
+        avg_dl = df['Download Bandwidth (Mbps)'].mean()
+        avg_ul = df['Upload Bandwidth (Mbps)'].mean()
+        _test_status['result'] = (avg_dl, avg_ul)
+    except Exception as e:
+        _test_status['error'] = str(e)
+    finally:
+        _test_status['running'] = False
 
 PREDEFINED_SERVERS = [
     {'label': 'Telstra - Melbourne (12491)', 'value': '12491'},
@@ -93,6 +112,13 @@ app.layout = html.Div([
     dcc.Interval(
         id='refresh-interval',
         interval=60000,
+        disabled=True,
+        n_intervals=0
+    ),
+    
+    dcc.Interval(
+        id='test-poll-interval',
+        interval=2000,
         disabled=True,
         n_intervals=0
     ),
@@ -294,62 +320,82 @@ def toggle_autorefresh(value):
 @callback(
     [Output('progress-message', 'children'),
      Output('progress-message', 'style'),
-     Output('test-trigger', 'data'),
-     Output('run-test-btn', 'disabled')],
+     Output('run-test-btn', 'disabled'),
+     Output('test-poll-interval', 'disabled')],
     Input('run-test-btn', 'n_clicks'),
     [State('server-dropdown', 'value'),
-     State('custom-server-input', 'value'),
-     State('test-trigger', 'data')],
+     State('custom-server-input', 'value')],
     prevent_initial_call=True
 )
-def run_speedtest(n_clicks, server_selection, custom_server_id, current_trigger):
+def start_speedtest(n_clicks, server_selection, custom_server_id):
+    """Start a speedtest in a background thread; show 'Running...' immediately."""
+    global _test_status
     if n_clicks > 0:
         server_id = custom_server_id if server_selection == 'custom' else server_selection
-        
+
         if not server_id:
             return 'Please enter a valid server ID', {
-                'marginTop': '20px',
-                'padding': '15px',
-                'backgroundColor': '#ffebee',
-                'borderRadius': '4px',
-                'color': '#c62828',
-                'fontSize': '14px',
-                'fontWeight': '500',
+                'marginTop': '20px', 'padding': '15px',
+                'backgroundColor': '#ffebee', 'borderRadius': '4px',
+                'color': '#c62828', 'fontSize': '14px', 'fontWeight': '500',
                 'display': 'block'
-            }, current_trigger, False
-        
-        try:
-            # Note: insert_session stores one session row + all N run rows (no averaging)
-            df = Speedtest().run_test(server_id=int(server_id), num_of_runs=3)
-            insert_session(df, 'speedtest')
-            
-            # Since insert_speedtest performs averaging, let's fetch the last inserted average to display in the success message
-            avg_dl = df['Download Bandwidth (Mbps)'].mean()
-            avg_ul = df['Upload Bandwidth (Mbps)'].mean()
-            
-            return f'Speedtest completed successfully! Average of 3 runs - Download: {avg_dl:.2f} Mbps, Upload: {avg_ul:.2f} Mbps', {
-                'marginTop': '20px',
-                'padding': '15px',
-                'backgroundColor': '#e8f5e9',
-                'borderRadius': '4px',
-                'color': '#2e7d32',
-                'fontSize': '14px',
-                'fontWeight': '500',
-                'display': 'block'
-            }, current_trigger + 1, False
-        except Exception as e:
-            return f'Error running speedtest: {str(e)}', {
-                'marginTop': '20px',
-                'padding': '15px',
-                'backgroundColor': '#ffebee',
-                'borderRadius': '4px',
-                'color': '#c62828',
-                'fontSize': '14px',
-                'fontWeight': '500',
-                'display': 'block'
-            }, current_trigger, False
-    
-    return '', {'display': 'none'}, current_trigger, False
+            }, False, True
+
+        _test_status = {'running': True, 'result': None, 'error': None}
+        thread = threading.Thread(target=_run_speedtest_bg, args=(server_id,))
+        thread.daemon = True
+        thread.start()
+
+        return 'Running speedtest (3 runs)... this may take a minute.', {
+            'marginTop': '20px', 'padding': '15px',
+            'backgroundColor': '#e3f2fd', 'borderRadius': '4px',
+            'color': '#1976d2', 'fontSize': '14px', 'fontWeight': '500',
+            'display': 'block'
+        }, True, False
+
+    return '', {'display': 'none'}, False, True
+
+
+@callback(
+    [Output('progress-message', 'children', allow_duplicate=True),
+     Output('progress-message', 'style', allow_duplicate=True),
+     Output('test-trigger', 'data'),
+     Output('run-test-btn', 'disabled', allow_duplicate=True),
+     Output('test-poll-interval', 'disabled', allow_duplicate=True)],
+    Input('test-poll-interval', 'n_intervals'),
+    [State('test-trigger', 'data')],
+    prevent_initial_call=True
+)
+def poll_speedtest(n_intervals, current_trigger):
+    """Poll for background speedtest completion and update the dashboard."""
+    global _test_status
+    if _test_status['running']:
+        return no_update, no_update, no_update, no_update, no_update
+
+    trigger_val = current_trigger if current_trigger is not None else 0
+
+    if _test_status['error']:
+        err = _test_status['error']
+        _test_status['error'] = None
+        return f'Error running speedtest: {err}', {
+            'marginTop': '20px', 'padding': '15px',
+            'backgroundColor': '#ffebee', 'borderRadius': '4px',
+            'color': '#c62828', 'fontSize': '14px', 'fontWeight': '500',
+            'display': 'block'
+        }, trigger_val, False, True
+
+    if _test_status['result']:
+        avg_dl, avg_ul = _test_status['result']
+        _test_status['result'] = None
+        return (f'Speedtest completed! Average of 3 runs - '
+                f'Download: {avg_dl:.2f} Mbps, Upload: {avg_ul:.2f} Mbps'), {
+            'marginTop': '20px', 'padding': '15px',
+            'backgroundColor': '#e8f5e9', 'borderRadius': '4px',
+            'color': '#2e7d32', 'fontSize': '14px', 'fontWeight': '500',
+            'display': 'block'
+        }, trigger_val + 1, False, True
+
+    return no_update, no_update, no_update, False, True
 
 
 @callback(
