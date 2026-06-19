@@ -9,7 +9,7 @@ from dash import Dash, dcc, html, dash_table, Input, Output, State, callback, ct
 # Ensure the project root is in the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from wrappers.database import init_database, insert_speedtest
+from wrappers.database import init_database, insert_session
 from wrappers import Speedtest
 from tools.analysis import get_results_summary, build_graph
 
@@ -319,9 +319,9 @@ def run_speedtest(n_clicks, server_selection, custom_server_id, current_trigger)
             }, current_trigger, False
         
         try:
-            # Note: insert_speedtest will automatically calculate and store only the average run
+            # Note: insert_session stores one session row + all N run rows (no averaging)
             df = Speedtest().run_test(server_id=int(server_id), num_of_runs=3)
-            insert_speedtest(df)
+            insert_session(df, 'speedtest')
             
             # Since insert_speedtest performs averaging, let's fetch the last inserted average to display in the success message
             avg_dl = df['Download Bandwidth (Mbps)'].mean()

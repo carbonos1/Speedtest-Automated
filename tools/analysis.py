@@ -1,7 +1,7 @@
 import pandas as pd
 import plotly.graph_objects as go
 from datetime import datetime
-from wrappers.database import get_all_results
+from wrappers.database import get_all_session_results
 
 RENAME_MAP = {
     'download_mbps': 'Download Bandwidth (Mbps)',
@@ -12,32 +12,17 @@ RENAME_MAP = {
 }
 
 def get_results_summary():
-    '''Get summary results from the SQLite database grouped by file/timestamp'''
-    speedtest, iperf = get_all_results()
-    
-    if not speedtest.empty:
-        speedtest = speedtest.rename(columns=RENAME_MAP)
-        speedtest['file'] = pd.to_datetime(speedtest['timestamp']).dt.strftime('%Y-%m-%d_%H-%M-%S')
-        speedtest_means = speedtest.groupby('file')[['Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']].mean().reset_index()
-        speedtest_means['Server Name'] = speedtest.groupby('file')['server_name'].first().values
-        try:
-            jitter_cols = speedtest.groupby('file')[['Download Jitter','Latency','Upload Jitter']].mean()
-            speedtest_means = speedtest_means.merge(jitter_cols, left_on='file', right_index=True)
-        except KeyError:
-            pass
-    else:
-        speedtest_means = pd.DataFrame()
-    
-    if not iperf.empty:
-        iperf = iperf.rename(columns=RENAME_MAP)
-        iperf['file'] = pd.to_datetime(iperf['test_datetime']).dt.strftime('%Y-%m-%d_%H-%M-%S')
-        iperf_means = iperf.groupby('file')[['Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']].mean().reset_index()
-        iperf_means['Server Name'] = iperf.groupby('file')['server_name'].first().values
-    else:
-        iperf_means = pd.DataFrame()
-    
-    combined = pd.concat([speedtest_means, iperf_means], ignore_index=True)
-    return combined.sort_values('file').reset_index(drop=True) if not combined.empty else combined
+    '''Get session-level results from the SQLite database.
+
+    Returns one row per test session (pre-computed averages from
+    test_sessions), ready for graphing and tabular display. Replaces the
+    legacy get_all_results() + groupby-averaging path.
+    '''
+    sessions = get_all_session_results()
+    if sessions.empty:
+        return sessions
+    # get_all_session_results already renames columns and adds 'file'/'datetime'
+    return sessions
 
 def build_graph(iperf_results):
     ''' Builds the graph for us :)'''

@@ -6,7 +6,7 @@ import os
 import sys
 from wrappers import Speedtest
 from wrappers import Iperf3Auto
-from wrappers.database import init_database, insert_speedtest, insert_iperf, db_is_empty, csv_files_exist, migrate_csv_to_db
+from wrappers.database import init_database, insert_session, db_is_empty, csv_files_exist, migrate_csv_to_db
 
 HELP = \
     f"\nSpeedTest-Automated\n"\
@@ -18,10 +18,7 @@ TELSTRA_SYDNEY = ['Telstra - Sydney',12492]
 
 def print_results(df_total, mode):
     '''Prints output results of testing on screen, and saves them to the SQLite database'''
-    if 's' in mode.lower():
-        insert_speedtest(df_total)
-    else:
-        insert_iperf(df_total)
+    insert_session(df_total, mode)
     
     print(df_total[['Server Name','Download Bandwidth (Mbps)','Upload Bandwidth (Mbps)']])
     print('-------\nAverage\n-------')
