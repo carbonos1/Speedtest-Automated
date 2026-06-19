@@ -5,6 +5,7 @@ import sys
 
 from wrappers import Iperf3Auto, Speedtest, TR143Tester
 from wrappers.database import csv_files_exist, db_is_empty, init_database, insert_session, migrate_csv_to_db
+from wrappers.utils import setup_logging
 
 
 def print_results(df_total, mode):
@@ -45,6 +46,7 @@ def run_test(mode='speedtest', server=None, num_of_runs=3,
 
 def main():
     '''Primary Function of Script, controls cli control logic, and interprets flags for our use'''
+    setup_logging()
     init_database()
 
     if db_is_empty() and csv_files_exist():
