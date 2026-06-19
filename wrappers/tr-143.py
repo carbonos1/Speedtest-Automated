@@ -20,14 +20,18 @@ class TR143Tester:
     def download_test(self):
         start_time = time.time()
         response = requests.get(self.download_url, stream=True)
+        response.raise_for_status()
 
         total_data = 0
         for chunk in response.iter_content(chunk_size=4096):
-            total_data += len(chunk)
+            if chunk:
+                total_data += len(chunk)
 
         end_time = time.time()
         elapsed_time = end_time - start_time
-        download_speed_mbps = (total_data * 8) / (elapsed_time * 1_000_000)  # Convert bytes to bits, then to Mbps
+        if elapsed_time == 0:
+            return 0.0
+        download_speed_mbps = (total_data * 8) / (elapsed_time * 1_000_000)
         return download_speed_mbps
 
     def upload_test(self):
@@ -35,31 +39,36 @@ class TR143Tester:
             m = MultipartEncoder(fields={'file': ('filename', f)})
             start_time = time.time()
             response = requests.post(self.upload_url, data=m, headers={'Content-Type': m.content_type})
+            response.raise_for_status()
             end_time = time.time()
 
             elapsed_time = end_time - start_time
             total_data = m.len
-            upload_speed_mbps = (total_data * 8) / (elapsed_time * 1_000_000)  # Convert bytes to bits, then to Mbps
+            if elapsed_time == 0:
+                return 0.0
+            upload_speed_mbps = (total_data * 8) / (elapsed_time * 1_000_000)
         return upload_speed_mbps
 
     def measure_latency(self):
-        latency = ping(self.ping_host) * 1000  # Convert from seconds to milliseconds
-        return latency
+        latency = ping(self.ping_host)
+        if latency is None:
+            return None
+        return latency * 1000
 
     def run_tests(self):
         print("Starting TR-143 compliant speed test...")
 
-        # Measure download speed
         download_speed = self.download_test()
         print(f"Download Speed: {download_speed:.2f} Mbps")
 
-        # Measure upload speed
         upload_speed = self.upload_test()
         print(f"Upload Speed: {upload_speed:.2f} Mbps")
 
-        # Measure latency to a specific host
         latency = self.measure_latency()
-        print(f"Latency to {self.ping_host}: {latency:.2f} ms")
+        if latency is not None:
+            print(f"Latency to {self.ping_host}: {latency:.2f} ms")
+        else:
+            print(f"Latency to {self.ping_host}: failed (host unreachable)")
 
 # Example usage:
 if __name__ == '__main__':

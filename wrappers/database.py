@@ -317,18 +317,22 @@ def insert_session(df, mode):
 def get_speedtest_results(limit=None):
     """Retrieve speedtest results as a DataFrame."""
     query = 'SELECT * FROM speedtest_results ORDER BY timestamp DESC'
+    params = ()
     if limit:
-        query += f' LIMIT {limit}'
+        query += ' LIMIT ?'
+        params = (limit,)
     with get_connection() as conn:
-        return pd.read_sql_query(query, conn)
+        return pd.read_sql_query(query, conn, params=params)
 
 def get_iperf_results(limit=None):
     """Retrieve iperf results as a DataFrame."""
     query = 'SELECT * FROM iperf_results ORDER BY test_datetime DESC'
+    params = ()
     if limit:
-        query += f' LIMIT {limit}'
+        query += ' LIMIT ?'
+        params = (limit,)
     with get_connection() as conn:
-        return pd.read_sql_query(query, conn)
+        return pd.read_sql_query(query, conn, params=params)
 
 def get_all_results():
     """Get combined results from both tables for analysis."""
@@ -441,13 +445,18 @@ def db_is_empty():
         return speedtest_count == 0 and iperf_count == 0 and session_count == 0
 
 def csv_files_exist(results_dir=None):
-    """Check if there are any CSV files in the results directory."""
+    """Check if there are any legacy CSV files in the results directory.
+
+    Excludes Dash dashboard CSV exports (speedtest_results_*.csv) which
+    have a different schema and should not be migrated.
+    """
     import glob
-    
+
     if results_dir is None:
         results_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'results')
-    
+
     csv_files = glob.glob(f'{results_dir}/**/*.csv', recursive=True)
+    csv_files = [f for f in csv_files if not os.path.basename(f).startswith('speedtest_results_')]
     return len(csv_files) > 0
 
 def migrate_csv_to_db(results_dir=None):

@@ -8,8 +8,10 @@ import glob
 import matplotlib.pyplot as plt
 
 
-def concat_files(path='results/',dfs=[]):
+def concat_files(path='results/', dfs=None):
     '''Nabs all the files in the current directory, then combines them together'''
+    if dfs is None:
+        dfs = []
     # Outlines files in current directory
     files = glob.glob(path + "/*.csv")
     for file in files:
