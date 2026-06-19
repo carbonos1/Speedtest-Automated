@@ -1,0 +1,19 @@
+[project]
+name = "speedtest-automated"
+version = "1.0.0"
+description = "Automated Speedtest.net and iPerf3 network performance testing toolkit"
+requires-python = ">=3.10"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["wrappers", "tools"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,7 +1,6 @@
 '''Module to batch run iPerf tests using the iperf3 library.'''
 import logging
 from datetime import datetime
-from typing import Optional
 
 import iperf3
 import pandas as pd

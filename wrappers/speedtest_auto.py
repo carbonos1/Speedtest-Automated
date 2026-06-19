@@ -1,10 +1,9 @@
 '''Wrapper for Speedtest Executable.
 This modules allows us to generate a speedtest.net result, and convert it into pandas dataframe'''
-import os
 import json
 import logging
+import os
 import subprocess
-from typing import Optional
 
 import pandas as pd
 
@@ -55,9 +54,9 @@ class Speedtest:
                 cmd, shell=True, capture_output=True, text=True, timeout=timeout
             )
         except subprocess.TimeoutExpired:
-            raise RuntimeError(f'Speedtest timed out after {timeout}s for server {server_id}')
+            raise RuntimeError(f'Speedtest timed out after {timeout}s for server {server_id}') from None
         except FileNotFoundError:
-            raise RuntimeError('Speedtest binary not found. Ensure bin/speedtest exists.')
+            raise RuntimeError('Speedtest binary not found. Ensure bin/speedtest exists.') from None
 
         if result.returncode != 0:
             stderr = result.stderr.strip() if result.stderr else 'unknown error'
@@ -77,7 +76,7 @@ class Speedtest:
         try:
             data = json.loads(input_str)
         except json.JSONDecodeError as e:
-            raise RuntimeError(f'Failed to parse speedtest JSON: {e}')
+            raise RuntimeError(f'Failed to parse speedtest JSON: {e}') from e
 
         server = data.get('server', {})
         interface = data.get('interface', {})

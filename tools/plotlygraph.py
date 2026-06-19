@@ -5,11 +5,9 @@ import argparse
 import os
 import sys
 
-import plotly.graph_objects as go
-
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tools.analysis import get_results_summary, build_graph
+from tools.analysis import build_graph, get_results_summary
 
 
 def main():

@@ -1,9 +1,9 @@
 """SQLite Database wrapper for speedtest and iperf results."""
-import sqlite3
 import os
-import pandas as pd
-from datetime import datetime
+import sqlite3
 from contextlib import contextmanager
+
+import pandas as pd
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'results', 'speedtest.db')
 
@@ -339,11 +339,11 @@ def get_all_results():
     speedtest = get_speedtest_results()
     speedtest['datetime'] = pd.to_datetime(speedtest['timestamp']).dt.strftime('%Y-%m-%d %H:%M:%S')
     speedtest['file'] = pd.to_datetime(speedtest['timestamp']).dt.strftime('%Y-%m-%d_%H-%M-%S')
-    
+
     iperf = get_iperf_results()
     iperf['datetime'] = pd.to_datetime(iperf['test_datetime']).dt.strftime('%Y-%m-%d %H:%M:%S')
     iperf['file'] = pd.to_datetime(iperf['test_datetime']).dt.strftime('%Y-%m-%d_%H-%M-%S')
-    
+
     return speedtest, iperf
 
 def get_summary_by_server():
@@ -360,7 +360,7 @@ def get_summary_by_server():
             FROM speedtest_results
             GROUP BY server_name
         ''', conn)
-        
+
         iperf = pd.read_sql_query('''
             SELECT server_name,
                    AVG(download_mbps) as "Download Bandwidth (Mbps)",
@@ -368,7 +368,7 @@ def get_summary_by_server():
             FROM iperf_results
             GROUP BY server_name
         ''', conn)
-        
+
     return speedtest, iperf
 
 
@@ -467,16 +467,16 @@ def migrate_csv_to_db(results_dir=None):
     behaviour that collapsed multi-run CSVs into a single averaged row.
     """
     import glob
-    
+
     if results_dir is None:
         results_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'results')
-    
+
     csv_files = glob.glob(f'{results_dir}/**/*.csv', recursive=True)
-    
+
     for csv_file in csv_files:
         try:
             df = pd.read_csv(csv_file)
-            
+
             if 'Timestamp' in df.columns:
                 insert_session(df, 'speedtest')
                 print(f'Migrated speedtest: {csv_file} ({len(df)} runs)')

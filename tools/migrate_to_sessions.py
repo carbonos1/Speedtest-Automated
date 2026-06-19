@@ -28,7 +28,7 @@ import pandas as pd
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from wrappers.database import DB_PATH, get_connection, init_database
+from wrappers.database import get_connection, init_database
 
 GAP_DEFAULT = 60  # seconds (speedtest)
 IPERF_GAP_DEFAULT = 25  # seconds (iperf; intra-session spacing is ~20s)
@@ -80,7 +80,7 @@ def _summarize_groups(all_groups, label):
     print(f'\n=== {label} ===')
     print(f'  total legacy rows : {sum(sizes)}')
     print(f'  proposed sessions : {len(all_groups)}')
-    print(f'  runs-per-session distribution:')
+    print('  runs-per-session distribution:')
     for size in sorted(dist):
         marker = '  <-- flagged (>10 runs)' if size > 10 else ''
         print(f'    {size} run(s): {dist[size]} session(s){marker}')
@@ -234,7 +234,7 @@ def main():
 
         total_sessions = len(sp_groups) + len(ip_groups)
         total_runs = sum(len(g) for g in sp_groups) + sum(len(g) for g in ip_groups)
-        print(f'\n=== TOTALS ===')
+        print('\n=== TOTALS ===')
         print(f'  proposed sessions : {total_sessions}')
         print(f'  total runs        : {total_runs}')
 

@@ -5,7 +5,6 @@ import argparse
 import os
 import sys
 
-import pandas as pd
 import matplotlib.pyplot as plt
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -33,10 +32,10 @@ def main():
     ax.scatter(x=results['file'], y=results['Download Bandwidth (Mbps)'])
     ax.scatter(x=results['file'], y=results['Upload Bandwidth (Mbps)'])
 
-    for i, j in zip(results['file'], results['Download Bandwidth (Mbps)']):
+    for i, j in zip(results['file'], results['Download Bandwidth (Mbps)'], strict=False):
         ax.annotate(str(round(j, 2)), xy=(i, j))
 
-    for i, j in zip(results['file'], results['Upload Bandwidth (Mbps)']):
+    for i, j in zip(results['file'], results['Upload Bandwidth (Mbps)'], strict=False):
         ax.annotate(str(round(j, 2)), xy=(i, j))
 
     ax.grid()

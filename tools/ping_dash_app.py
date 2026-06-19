@@ -1,11 +1,12 @@
-import threading
-import subprocess
-import time
 import datetime
 import os
+import subprocess
+import threading
+import time
+
 import pandas as pd
-from dash import Dash, dcc, html, dash_table, Input, Output, State, ctx
 import plotly.graph_objects as go
+from dash import Dash, Input, Output, State, ctx, dash_table, dcc, html
 
 # Global variables to control the pinging thread
 pinging = False
@@ -27,8 +28,7 @@ def ping(host, interval):
         try:
             result = subprocess.run(
                 ['ping', '-c', '1', host],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                universal_newlines=True, timeout=10
+                capture_output=True, text=True, timeout=10
             )
             if result.returncode == 0:
                 output = result.stdout

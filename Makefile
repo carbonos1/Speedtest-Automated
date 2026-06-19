@@ -1,8 +1,13 @@
-init: 
+init:
 	pip install -r requirements.txt
 
-test: 
-	py.test tests
+test:
+	pytest tests/ -v
 
-.PHONY: 
-	init test
+lint:
+	ruff check .
+
+format:
+	ruff format .
+
+.PHONY: init test lint format

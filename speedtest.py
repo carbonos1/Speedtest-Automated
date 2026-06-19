@@ -3,8 +3,8 @@
 import argparse
 import sys
 
-from wrappers import Speedtest, Iperf3Auto, TR143Tester
-from wrappers.database import init_database, insert_session, db_is_empty, csv_files_exist, migrate_csv_to_db
+from wrappers import Iperf3Auto, Speedtest, TR143Tester
+from wrappers.database import csv_files_exist, db_is_empty, init_database, insert_session, migrate_csv_to_db
 
 
 def print_results(df_total, mode):
@@ -15,12 +15,14 @@ def print_results(df_total, mode):
     print('-------\nAverage\n-------')
     print(df_total[['Download Bandwidth (Mbps)', 'Upload Bandwidth (Mbps)']].mean())
     print('-------')
-    print(f'Results saved to SQLite database')
+    print('Results saved to SQLite database')
 
 
-def run_test(mode='speedtest', server=['Telstra - Melbourne', 12491], num_of_runs=3,
+def run_test(mode='speedtest', server=None, num_of_runs=3,
              download_url=None, upload_url=None, upload_file=None, ping_host='google.com'):
     '''Function to run the Actual Tests'''
+    if server is None:
+        server = ['Telstra - Melbourne', 12491]
 
     if mode == 'speedtest':
         df = Speedtest().run_test(server_name=server[0], server_id=server[1], num_of_runs=num_of_runs)

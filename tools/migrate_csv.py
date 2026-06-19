@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from wrappers.database import init_database, migrate_csv_to_db
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Migrate legacy CSV result files into the SQLite database"

@@ -1,6 +1,7 @@
-import pandas as pd
-import plotly.graph_objects as go
 from datetime import datetime
+
+import plotly.graph_objects as go
+
 from wrappers.database import get_all_session_results
 
 RENAME_MAP = {
@@ -27,6 +28,9 @@ def get_results_summary():
 def build_graph(iperf_results):
     ''' Builds the graph for us :)'''
     fig = go.Figure()
+    if iperf_results.empty or 'file' not in iperf_results.columns:
+        fig.update_layout(title='No data available')
+        return fig
     fig.add_trace(go.Scatter(
         x=iperf_results['file'],
         y=iperf_results['Download Bandwidth (Mbps)'],
@@ -65,5 +69,5 @@ def build_graph(iperf_results):
     fig.update_xaxes(showline=True, linewidth=2, linecolor='black',gridcolor='lightgrey')
     fig.update_yaxes(showline=True, linewidth=2, linecolor='black',gridcolor='lightgrey')
     fig.update_layout(title=title,plot_bgcolor='white',height=800)
-    
+
     return fig

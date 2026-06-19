@@ -3,16 +3,17 @@ import os
 import sys
 import threading
 from datetime import datetime
+
 import pandas as pd
 import plotly.graph_objects as go
-from dash import Dash, dcc, html, dash_table, Input, Output, State, callback, ctx, no_update
+from dash import Dash, Input, Output, State, callback, dash_table, dcc, html, no_update
 
 # Ensure the project root is in the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from wrappers.database import init_database, insert_session
+from tools.analysis import build_graph, get_results_summary
 from wrappers import Speedtest
-from tools.analysis import get_results_summary, build_graph
+from wrappers.database import init_database, insert_session
 
 # Background test task state (thread-safe via GIL for simple dict ops)
 _test_status = {'running': False, 'result': None, 'error': None}
@@ -43,12 +44,12 @@ PREDEFINED_SERVERS = [
 app = Dash(__name__)
 
 app.layout = html.Div([
-    html.H1('Throughput Performance Dashboard', 
+    html.H1('Throughput Performance Dashboard',
             style={'marginBottom': '30px', 'color': '#1a1a1a', 'fontSize': '2.5rem'}),
-    
+
     html.Div([
         html.Div([
-            html.Label('Select Speedtest Server:', 
+            html.Label('Select Speedtest Server:',
                       style={'display': 'block', 'marginBottom': '8px', 'fontWeight': '500', 'color': '#333333'}),
             dcc.Dropdown(
                 id='server-dropdown',
@@ -71,13 +72,13 @@ app.layout = html.Div([
                 }
             ),
         ], style={'flex': '1', 'marginRight': '20px'}),
-        
+
         html.Div([
             dcc.Loading(
                 id='loading-button',
                 type='circle',
                 children=[
-                    html.Button('Run Speed Test', id='run-test-btn', n_clicks=0, 
+                    html.Button('Run Speed Test', id='run-test-btn', n_clicks=0,
                                style={
                                    'padding': '12px 24px',
                                    'backgroundColor': '#0066cc',
@@ -108,25 +109,25 @@ app.layout = html.Div([
         'display': 'flex',
         'alignItems': 'flex-end'
     }),
-    
+
     dcc.Interval(
         id='refresh-interval',
         interval=60000,
         disabled=True,
         n_intervals=0
     ),
-    
+
     dcc.Interval(
         id='test-poll-interval',
         interval=2000,
         disabled=True,
         n_intervals=0
     ),
-    
+
     dcc.Store(id='test-trigger', data=0),
-    
+
     dcc.Download(id='download-data'),
-    
+
     dcc.Loading(
         id='loading-graph',
         type='default',
@@ -134,7 +135,7 @@ app.layout = html.Div([
             dcc.Graph(id='performance-graph', style={'height': '800px'})
         ]
     ),
-    
+
     html.Div(id='progress-message', style={
         'marginTop': '20px',
         'padding': '15px',
@@ -145,9 +146,9 @@ app.layout = html.Div([
         'fontWeight': '500',
         'display': 'none'
     }),
-    
+
     html.Div([
-        html.H2('Throughput Performance Table', 
+        html.H2('Throughput Performance Table',
                 style={'margin': 0, 'color': '#1a1a1a'}),
         html.Button('Download CSV', id='download-btn', n_clicks=0,
                    style={
@@ -161,7 +162,7 @@ app.layout = html.Div([
                        'fontWeight': '500'
                    }),
     ], style={'display': 'flex', 'justifyContent': 'space-between', 'alignItems': 'center', 'marginTop': '50px', 'marginBottom': '20px'}),
-    
+
     dash_table.DataTable(
         id='results-table',
         page_size=20,
@@ -242,7 +243,7 @@ def toggle_custom_input(selected_value):
 )
 def update_dashboard(n_intervals, test_trigger):
     results = get_results_summary()
-    
+
     if results.empty:
         fig = go.Figure()
         fig.update_layout(
@@ -252,9 +253,9 @@ def update_dashboard(n_intervals, test_trigger):
             font=dict(color='#333333')
         )
         return fig, [], []
-    
+
     fig = build_graph(results)
-    
+
     fig.update_layout(
         plot_bgcolor='white',
         paper_bgcolor='white',
@@ -286,13 +287,13 @@ def update_dashboard(n_intervals, test_trigger):
         ),
         margin=dict(l=60, r=40, t=60, b=60)
     )
-    
+
     for trace in fig.data:
         if trace.line.width is None or trace.line.width < 2:
             trace.line.width = 2.5
         if trace.marker.size is None or trace.marker.size < 6:
             trace.marker.size = 6
-    
+
     # Safely handle NaN values so we generate valid JSON without 'NaN' literals
     table_data = []
     for row in results.to_dict('records'):
@@ -303,9 +304,9 @@ def update_dashboard(n_intervals, test_trigger):
             else:
                 clean_row[k] = v
         table_data.append(clean_row)
-        
+
     table_columns = [{'name': col, 'id': col} for col in results.columns]
-    
+
     return fig, table_data, table_columns
 
 
