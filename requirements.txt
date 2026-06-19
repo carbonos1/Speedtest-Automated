@@ -1,8 +1,11 @@
 iperf3
 pandas
 matplotlib
-datetime
 dash
 numpy
 plotly
 kaleido
+requests
+requests_toolbelt
+ping3
+openpyxl

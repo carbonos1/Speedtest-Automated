@@ -261,10 +261,10 @@ def insert_session(df, mode):
 
     avg_dl = _mean(dl)
     avg_ul = _mean(ul)
-    avg_latency = _mean(_col('Latency')) if is_speedtest else None
-    avg_idle_jitter = _mean(_col('Idle Jitter')) if is_speedtest else None
-    avg_dl_jitter = _mean(_col('Download Jitter')) if is_speedtest else None
-    avg_ul_jitter = _mean(_col('Upload Jitter')) if is_speedtest else None
+    avg_latency = _mean(_col('Latency')) if 'Latency' in df.columns else None
+    avg_idle_jitter = _mean(_col('Idle Jitter')) if 'Idle Jitter' in df.columns else None
+    avg_dl_jitter = _mean(_col('Download Jitter')) if 'Download Jitter' in df.columns else None
+    avg_ul_jitter = _mean(_col('Upload Jitter')) if 'Upload Jitter' in df.columns else None
 
     with get_connection() as conn:
         cur = conn.execute('''
@@ -289,13 +289,13 @@ def insert_session(df, mode):
         # Insert every run verbatim
         dl_list = dl.tolist()
         ul_list = ul.tolist()
-        lat_list = _col('Latency').tolist() if is_speedtest else [None] * num_runs
-        idle_list = _col('Idle Jitter').tolist() if is_speedtest else [None] * num_runs
-        dlj_list = _col('Download Jitter').tolist() if is_speedtest else [None] * num_runs
-        ulj_list = _col('Upload Jitter').tolist() if is_speedtest else [None] * num_runs
-        nsdl_list = _col('Number of Streams (DL)').tolist() if not is_speedtest else [None] * num_runs
-        nsul_list = _col('Number of Streams (UL)').tolist() if not is_speedtest else [None] * num_runs
-        url_list = _col('Result URL').tolist() if is_speedtest else [None] * num_runs
+        lat_list = _col('Latency').tolist() if 'Latency' in df.columns else [None] * num_runs
+        idle_list = _col('Idle Jitter').tolist() if 'Idle Jitter' in df.columns else [None] * num_runs
+        dlj_list = _col('Download Jitter').tolist() if 'Download Jitter' in df.columns else [None] * num_runs
+        ulj_list = _col('Upload Jitter').tolist() if 'Upload Jitter' in df.columns else [None] * num_runs
+        nsdl_list = _col('Number of Streams (DL)').tolist() if 'Number of Streams (DL)' in df.columns else [None] * num_runs
+        nsul_list = _col('Number of Streams (UL)').tolist() if 'Number of Streams (UL)' in df.columns else [None] * num_runs
+        url_list = _col('Result URL').tolist() if 'Result URL' in df.columns else [None] * num_runs
 
         for i in range(num_runs):
             conn.execute('''
